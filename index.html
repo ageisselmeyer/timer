@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#16a34a" id="themeColorMeta" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Workout / Pause Timer</title>
@@ -432,6 +433,7 @@
     const ringEl = document.getElementById("ring");
     const secondsEl = document.getElementById("seconds");
     const phaseLabelEl = document.getElementById("phaseLabel");
+    const themeColorMeta = document.getElementById("themeColorMeta");
     const workoutInput = document.getElementById("workoutInput");
     const pauseInput = document.getElementById("pauseInput");
     const playBtn = document.getElementById("playBtn");
@@ -590,6 +592,9 @@
       timerEl.classList.toggle("pause", phase === PHASE_PAUSE);
       document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
       document.body.classList.toggle("phase-pause", phase === PHASE_PAUSE);
+      if (themeColorMeta) {
+        themeColorMeta.setAttribute("content", phase === PHASE_WORKOUT ? "#16a34a" : "#a8b0bd");
+      }
       const shown = Math.max(0, Math.ceil(remaining));
       secondsEl.textContent = String(shown);
       phaseLabelEl.textContent = phase === PHASE_WORKOUT ? "Workout" : "Pause";
