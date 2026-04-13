@@ -527,12 +527,25 @@
       return audioCtx;
     }
 
+    /** Phone/tablet speakers (esp. iPhone) sound harsh & tinny with raw ~1kHz sines — warm the chain. */
+    function prefersWarmSpeakerTone() {
+      if (typeof navigator === "undefined") return false;
+      const ua = navigator.userAgent || "";
+      if (/iPhone|iPad|iPod/i.test(ua)) return true;
+      if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+      if (/Android/i.test(ua)) return true;
+      return false;
+    }
+
     function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true) {
       const ctx = ensureAudioContext();
       const sr = ctx.sampleRate;
-      const attack = 0.008;
-      const release = fadeOut ? 0.08 : 0.016;
-      const key = [duration, frequency, gain, attack, release].join("|");
+      const warm = prefersWarmSpeakerTone();
+      const attack = warm ? 0.014 : 0.008;
+      const release = fadeOut ? 0.08 : warm ? 0.022 : 0.016;
+      const freqUse = warm ? frequency * 0.88 : frequency;
+      const gainUse = warm ? gain * 0.72 : gain;
+      const key = [duration, freqUse, gainUse, attack, release, fadeOut, warm ? "w" : "d"].join("|");
       let buffer = beepBufferCache.get(key);
 
       if (!buffer) {
@@ -542,7 +555,8 @@
         const attackSamples = Math.max(1, Math.floor(attack * sr));
         const releaseSamples = Math.max(1, Math.floor(release * sr));
         const sustainEnd = Math.max(0, sampleCount - releaseSamples);
-        const twoPiF = 2 * Math.PI * frequency;
+        const twoPiF = 2 * Math.PI * freqUse;
+        const twoPiF2 = 2 * Math.PI * freqUse * 2;
 
         for (let i = 0; i < sampleCount; i += 1) {
           let env = 1;
@@ -553,9 +567,15 @@
           }
           env = Math.max(0, Math.min(1, env));
           const t = i / sr;
-          data[i] = Math.sin(twoPiF * t) * gain * env;
+          const fundamental = Math.sin(twoPiF * t);
+          let sample = fundamental * gainUse * env;
+          if (warm) {
+            sample *= 0.88;
+            sample += Math.sin(twoPiF2 * t) * gainUse * env * 0.08;
+            sample = Math.tanh(sample * 1.35) * 0.92;
+          }
+          data[i] = sample;
         }
-        // Force exact zero endpoints to avoid boundary clicks.
         data[0] = 0;
         data[sampleCount - 1] = 0;
         beepBufferCache.set(key, buffer);
@@ -563,8 +583,23 @@
 
       const src = ctx.createBufferSource();
       src.buffer = buffer;
-      src.connect(ctx.destination);
-      src.start(ctx.currentTime + 0.003);
+      const t0 = ctx.currentTime + 0.003;
+
+      if (warm) {
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.setValueAtTime(Math.min(2800, sr * 0.38), t0);
+        lp.Q.setValueAtTime(0.7, t0);
+        const makeup = ctx.createGain();
+        makeup.gain.setValueAtTime(1.12, t0);
+        src.connect(lp);
+        lp.connect(makeup);
+        makeup.connect(ctx.destination);
+      } else {
+        src.connect(ctx.destination);
+      }
+
+      src.start(t0);
     }
 
     function setPhase(nextPhase) {
