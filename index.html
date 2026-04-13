@@ -260,9 +260,8 @@
         </label>
       </div>
       <div class="buttons">
-        <button id="startBtn">Start</button>
-        <button id="pauseBtn">Pause</button>
-        <button id="resetBtn">Reset</button>
+        <button id="playBtn" type="button">Start</button>
+        <button id="resetBtn" type="button">Reset</button>
       </div>
     </section>
   </main>
@@ -274,8 +273,7 @@
     const phaseLabelEl = document.getElementById("phaseLabel");
     const workoutInput = document.getElementById("workoutInput");
     const pauseInput = document.getElementById("pauseInput");
-    const startBtn = document.getElementById("startBtn");
-    const pauseBtn = document.getElementById("pauseBtn");
+    const playBtn = document.getElementById("playBtn");
     const resetBtn = document.getElementById("resetBtn");
 
     const PHASE_WORKOUT = "workout";
@@ -291,6 +289,18 @@
     let beepBufferCache = new Map();
     let beepedSecond = null;
     let wakeLock = null;
+    /** True after first Start until Reset — drives Play button label (Start vs Resume). */
+    let hasStarted = false;
+
+    function updatePlayButton() {
+      if (!hasStarted) {
+        playBtn.textContent = "Start";
+      } else if (running) {
+        playBtn.textContent = "Pause";
+      } else {
+        playBtn.textContent = "Resume";
+      }
+    }
 
     async function acquireWakeLock() {
       if (!("wakeLock" in navigator)) return;
@@ -428,9 +438,11 @@
     function startTimer() {
       if (running) return;
       ensureAudioContext().resume();
+      hasStarted = true;
       running = true;
       endTimeMs = performance.now() + remaining * 1000;
       void acquireWakeLock();
+      updatePlayButton();
       rafId = requestAnimationFrame(tick);
     }
 
@@ -442,11 +454,22 @@
         cancelAnimationFrame(rafId);
         rafId = null;
       }
+      updatePlayButton();
     }
 
     function resetTimer() {
       pauseTimer();
+      hasStarted = false;
       setPhase(PHASE_WORKOUT);
+      updatePlayButton();
+    }
+
+    function togglePlayPause() {
+      if (running) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
     }
 
     document.addEventListener("visibilitychange", () => {
@@ -455,8 +478,7 @@
       }
     });
 
-    startBtn.addEventListener("click", startTimer);
-    pauseBtn.addEventListener("click", pauseTimer);
+    playBtn.addEventListener("click", togglePlayPause);
     resetBtn.addEventListener("click", resetTimer);
 
     workoutInput.addEventListener("change", () => {
@@ -472,6 +494,7 @@
     });
 
     updateUI();
+    updatePlayButton();
   </script>
 </body>
 </html>
