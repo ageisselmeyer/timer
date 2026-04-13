@@ -736,6 +736,9 @@
       if (running) {
         endTimeMs = performance.now() + remaining * 1000;
       }
+      if (next === PHASE_WORKOUT) {
+        syncBrowserChromeDeferred();
+      }
     }
 
     /**
@@ -762,6 +765,16 @@
       if (appleBar) {
         appleBar.setAttribute("content", isWorkout ? "black-translucent" : "default");
       }
+    }
+
+    /** WebKit often drops theme-color if the meta swap happens in the same synchronous turn as other DOM updates. */
+    function syncBrowserChromeDeferred() {
+      requestAnimationFrame(() => {
+        syncBrowserChrome();
+        requestAnimationFrame(() => {
+          syncBrowserChrome();
+        });
+      });
     }
 
     function updateUI() {
@@ -843,7 +856,12 @@
       lastFinishedWorkoutPaletteIndex = null;
       const resetIdx = pickUniformPaletteIndexNot(resolvePaletteIndexFromThemeState());
       applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[resetIdx].hex, resetIdx);
+      lastSyncedBrowserChromeKey = null;
       setPhase(PHASE_WORKOUT);
+      syncBrowserChrome();
+      lastSyncedBrowserChromeKey =
+        phase === PHASE_WORKOUT ? `w:${workoutThemeHex ?? ""}` : "p";
+      syncBrowserChromeDeferred();
       updatePlayButton();
       updateDurationControlsLock();
     }
