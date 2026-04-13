@@ -44,13 +44,13 @@
     }
 
     body.phase-workout {
-      background: linear-gradient(125deg, #7dd3fc 0%, #38bdf8 35%, #0ea5e9 72%, #0284c7 100%);
-      color: #0c1929;
+      background: #16a34a;
+      color: #052e16;
     }
 
     body.phase-pause {
-      background: linear-gradient(145deg, #020f0a 0%, #0d2818 38%, #1b4332 72%, #2d6a4f 100%);
-      color: #e8f5e9;
+      background: #a8b0bd;
+      color: #1e293b;
     }
 
     .app {
@@ -70,13 +70,13 @@
     body.phase-workout .app {
       background: rgba(255, 255, 255, 0.48);
       border: 1px solid rgba(255, 255, 255, 0.55);
-      box-shadow: 0 14px 44px rgba(14, 116, 200, 0.32);
+      box-shadow: 0 14px 44px rgba(22, 101, 52, 0.28);
     }
 
     body.phase-pause .app {
-      background: rgba(13, 40, 31, 0.58);
-      border: 1px solid rgba(149, 213, 178, 0.38);
-      box-shadow: 0 14px 48px rgba(0, 0, 0, 0.42);
+      background: rgba(255, 255, 255, 0.52);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 14px 40px rgba(30, 41, 59, 0.14);
     }
 
     .timer {
@@ -268,41 +268,41 @@
     }
 
     .workout {
-      --fill-color: #0284c7;
-      --track-color: rgba(255, 255, 255, 0.52);
-      --inner-color: #eff6ff;
+      --fill-color: #15803d;
+      --track-color: rgba(255, 255, 255, 0.48);
+      --inner-color: #ecfdf5;
       --tick: rgba(255, 255, 255, 0.96);
     }
 
     .pause {
-      --fill-color: #40916c;
-      --track-color: rgba(255, 255, 255, 0.22);
-      --inner-color: #1b4332;
-      --tick: rgba(216, 243, 220, 0.9);
+      --fill-color: #8b939e;
+      --track-color: rgba(255, 255, 255, 0.52);
+      --inner-color: #c4c9d4;
+      --tick: rgba(255, 255, 255, 0.92);
     }
 
     .workout .center {
-      color: #1e3a8a;
+      color: #14532d;
     }
 
     .pause .center {
-      color: #d8f3dc;
+      color: #1e293b;
     }
 
     body.phase-workout .meta {
-      color: #1d4ed8;
+      color: #166534;
     }
 
     body.phase-pause .meta {
-      color: #95d5b2;
+      color: #475569;
     }
 
     body.phase-workout .durations > label {
-      color: #1e40af;
+      color: #15803d;
     }
 
     body.phase-pause .durations > label {
-      color: #b7e4c7;
+      color: #64748b;
     }
 
     body.phase-workout .field-stepper {
@@ -315,43 +315,43 @@
     }
 
     body.phase-workout .stepper-btn {
-      background: rgba(37, 99, 235, 0.16);
-      color: #1d4ed8;
+      background: rgba(22, 163, 74, 0.18);
+      color: #166534;
     }
 
     body.phase-workout .stepper-btn:active {
-      background: rgba(37, 99, 235, 0.28);
+      background: rgba(22, 163, 74, 0.3);
     }
 
     body.phase-pause .field-stepper {
-      border-color: rgba(149, 213, 178, 0.42);
-      background: rgba(8, 28, 21, 0.72);
+      border-color: rgba(255, 255, 255, 0.75);
+      background: rgba(255, 255, 255, 0.82);
     }
 
     body.phase-pause .field-stepper input[type="number"] {
-      color: #e8f5e9;
+      color: #1e293b;
     }
 
     body.phase-pause .stepper-btn {
-      background: rgba(255, 255, 255, 0.12);
-      color: #d8f3dc;
+      background: rgba(71, 85, 105, 0.12);
+      color: #475569;
     }
 
     body.phase-pause .stepper-btn:active {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(71, 85, 105, 0.2);
     }
 
     body.phase-workout .field-stepper input:disabled {
-      color: rgba(30, 64, 175, 0.55);
+      color: rgba(21, 83, 45, 0.55);
     }
 
     body.phase-pause .field-stepper input:disabled {
-      color: rgba(232, 245, 233, 0.45);
+      color: rgba(30, 41, 59, 0.45);
     }
 
     body.phase-workout .buttons button {
       background: rgba(255, 255, 255, 0.94);
-      color: #1d4ed8;
+      color: #15803d;
     }
 
     body.phase-workout .buttons button:hover {
@@ -359,12 +359,12 @@
     }
 
     body.phase-pause .buttons button {
-      background: rgba(64, 145, 108, 0.92);
-      color: #f0fdf4;
+      background: rgba(255, 255, 255, 0.92);
+      color: #475569;
     }
 
     body.phase-pause .buttons button:hover {
-      background: rgba(82, 183, 136, 0.98);
+      background: #ffffff;
     }
 
     @media (max-width: 480px) {
@@ -407,7 +407,7 @@
           Workout (sec)
           <div class="field-stepper">
             <button type="button" class="stepper-btn" id="workoutMinus" aria-label="Decrease workout by 5 seconds">−</button>
-            <input id="workoutInput" type="number" min="1" value="40" inputmode="numeric" />
+            <input id="workoutInput" type="number" min="5" value="40" inputmode="numeric" />
             <button type="button" class="stepper-btn" id="workoutPlus" aria-label="Increase workout by 5 seconds">+</button>
           </div>
         </label>
@@ -415,7 +415,7 @@
           Pause (sec)
           <div class="field-stepper">
             <button type="button" class="stepper-btn" id="pauseMinus" aria-label="Decrease pause by 5 seconds">−</button>
-            <input id="pauseInput" type="number" min="1" value="20" inputmode="numeric" />
+            <input id="pauseInput" type="number" min="5" value="20" inputmode="numeric" />
             <button type="button" class="stepper-btn" id="pausePlus" aria-label="Increase pause by 5 seconds">+</button>
           </div>
         </label>
@@ -439,6 +439,7 @@
 
     const PHASE_WORKOUT = "workout";
     const PHASE_PAUSE = "pause";
+    const MIN_DURATION_SEC = 5;
 
     let phase = PHASE_WORKOUT;
     let phaseDuration = getInputValue(workoutInput, 40);
@@ -498,7 +499,7 @@
 
     function getInputValue(input, fallback) {
       const value = Number.parseInt(input.value, 10);
-      return Number.isFinite(value) && value > 0 ? value : fallback;
+      return Number.isFinite(value) && value >= MIN_DURATION_SEC ? value : fallback;
     }
 
     function applyDurationInputChange(input) {
@@ -515,7 +516,7 @@
       if (hasStarted) return;
       const fallback = input === workoutInput ? 40 : 20;
       let next = getInputValue(input, fallback) + delta;
-      if (next < 1) next = 1;
+      if (next < MIN_DURATION_SEC) next = MIN_DURATION_SEC;
       input.value = String(next);
       applyDurationInputChange(input);
     }
