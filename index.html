@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#343434" />
+  <meta name="theme-color" content="#e4e6ec" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta id="appleStatusBarMeta" name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Workout Timer</title>
@@ -11,7 +11,7 @@
     :root {
       --text: #111;
       /* Shown in safe areas (status bar / home indicator); body phase color is inset so this stays visible. */
-      --browser-ui-kettlebell: #343434;
+      --browser-ui-kettlebell: #e4e6ec;
       --pause-bg: #a8b0bd;
       /* Pre-JS: black boot matches first script frame (then random kettlebell). Avoids a green flash before JS. */
       --workout-accent: #000000;
@@ -479,7 +479,7 @@
     const PHASE_WORKOUT = "workout";
     const PHASE_PAUSE = "pause";
     const MIN_DURATION_SEC = 5;
-    const BROWSER_UI_KETTLEBELL = "#343434";
+    const BROWSER_UI_KETTLEBELL = "#e4e6ec";
     /** First paint = black workout; then `scheduleWorkoutThemeReveal` applies random (mobile chrome may sample the first). */
     const WORKOUT_BOOT_PLACEHOLDER_HEX = "#000000";
 
@@ -495,8 +495,6 @@
 
     let workoutThemeHex = null;
     let workoutColorIndex = null;
-    /** Set when leaving workout for pause; used to pick a different band on the next workout. */
-    let lastFinishedWorkoutPaletteIndex = null;
 
     function normalizeHex(hex) {
       return String(hex || "")
@@ -745,19 +743,7 @@
 
     function switchPhase() {
       const next = phase === PHASE_WORKOUT ? PHASE_PAUSE : PHASE_WORKOUT;
-
-      if (next === PHASE_WORKOUT) {
-        const exclude =
-          lastFinishedWorkoutPaletteIndex ?? resolvePaletteIndexFromThemeState();
-        lastFinishedWorkoutPaletteIndex = null;
-        const nextIdx = pickUniformPaletteIndexNot(exclude);
-        applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[nextIdx].hex, nextIdx);
-      }
-
-      if (phase === PHASE_WORKOUT && next === PHASE_PAUSE) {
-        lastFinishedWorkoutPaletteIndex = resolvePaletteIndexFromThemeState();
-      }
-
+      /* Workout band color is chosen only on load and Reset — not each time pause ends. */
       setPhase(next);
       if (running) {
         endTimeMs = performance.now() + remaining * 1000;
@@ -849,7 +835,6 @@
     function resetTimer() {
       pauseTimer();
       hasStarted = false;
-      lastFinishedWorkoutPaletteIndex = null;
       const resetIdx = pickUniformPaletteIndexNot(resolvePaletteIndexFromThemeState());
       applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX, null);
       setPhase(PHASE_WORKOUT);
