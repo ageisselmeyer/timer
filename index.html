@@ -578,7 +578,8 @@
     }
 
     let phase = PHASE_WORKOUT;
-    let lastSyncedChromePhase = null;
+    /** Used so theme-color / html bg update on pause↔workout and whenever the workout band color changes. */
+    let lastSyncedBrowserChromeKey = null;
     let phaseDuration = getInputValue(workoutInput, 40);
     let remaining = phaseDuration;
     let running = false;
@@ -768,8 +769,12 @@
       timerEl.classList.toggle("pause", phase === PHASE_PAUSE);
       document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
       document.body.classList.toggle("phase-pause", phase === PHASE_PAUSE);
-      if (lastSyncedChromePhase !== phase) {
-        lastSyncedChromePhase = phase;
+      const chromeKey =
+        phase === PHASE_WORKOUT
+          ? `w:${workoutThemeHex ?? ""}`
+          : "p";
+      if (lastSyncedBrowserChromeKey !== chromeKey) {
+        lastSyncedBrowserChromeKey = chromeKey;
         syncBrowserChrome();
       }
       const shown = Math.max(0, Math.ceil(remaining));
