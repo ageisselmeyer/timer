@@ -6,10 +6,12 @@
   <meta name="theme-color" content="#343434" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta id="appleStatusBarMeta" name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Workout / Pause Timer</title>
+  <title>Workout Timer</title>
   <style>
     :root {
       --text: #111;
+      /* Shown in safe areas (status bar / home indicator); body phase color is inset so this stays visible. */
+      --browser-ui-kettlebell: #343434;
       --pause-bg: #a8b0bd;
       --workout-accent: #2c9323;
       --workout-inner: #ecfdf5;
@@ -20,6 +22,10 @@
       --workout-stepper-active: rgba(44, 147, 35, 0.3);
       --workout-disabled: rgba(29, 96, 23, 0.55);
       --workout-shadow: rgba(31, 103, 25, 0.28);
+    }
+
+    html {
+      background-color: var(--browser-ui-kettlebell);
     }
 
     html,
@@ -49,19 +55,37 @@
         max(16px, env(safe-area-inset-right))
         max(16px, env(safe-area-inset-bottom))
         max(16px, env(safe-area-inset-left));
-      transition:
-        background 0.45s ease,
-        color 0.35s ease;
+      background: transparent;
+      isolation: isolate;
+      transition: color 0.35s ease;
+    }
+
+    /* Phase fill sits *inside* safe areas so html’s kettlebell shows at top/bottom (and sides) behind translucent UI. */
+    body::before {
+      content: "";
+      position: fixed;
+      z-index: -1;
+      top: env(safe-area-inset-top);
+      right: env(safe-area-inset-right);
+      bottom: env(safe-area-inset-bottom);
+      left: env(safe-area-inset-left);
+      transition: background 0.45s ease;
     }
 
     body.phase-workout {
-      background: var(--workout-accent);
       color: var(--workout-body-text);
     }
 
+    body.phase-workout::before {
+      background: var(--workout-accent);
+    }
+
     body.phase-pause {
-      background: var(--pause-bg);
       color: #1e293b;
+    }
+
+    body.phase-pause::before {
+      background: var(--pause-bg);
     }
 
     .app {
@@ -729,10 +753,9 @@
       }
     }
 
-    /** Fixed `theme-color` + root bg (dynamic workout colors are unreliable in mobile browser UI). */
+    /** Fixed `theme-color` metas (html background comes from CSS `--browser-ui-kettlebell`). */
     function installFixedBrowserChrome() {
       const c = BROWSER_UI_KETTLEBELL;
-      document.documentElement.style.backgroundColor = c;
       document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
       const makeMeta = (extra) => {
         const el = document.createElement("meta");
