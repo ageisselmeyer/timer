@@ -13,7 +13,7 @@
       /* Shown in safe areas (status bar / home indicator); body phase color is inset so this stays visible. */
       --browser-ui-kettlebell: #343434;
       --pause-bg: #a8b0bd;
-      /* Until main script runs: black workout shell (matches first applyWorkoutThemeFromHex frame). */
+      /* Pre-JS: black boot matches first script frame (then random kettlebell). Avoids a green flash before JS. */
       --workout-accent: #000000;
       --workout-inner: #1a1a1a;
       --workout-body-text: #e8e8e8;
@@ -412,6 +412,20 @@
       }
     }
   </style>
+  <script>
+    (function () {
+      var s = document.documentElement.style;
+      s.setProperty("--workout-accent", "#000000");
+      s.setProperty("--workout-inner", "#1a1a1a");
+      s.setProperty("--workout-body-text", "#e8e8e8");
+      s.setProperty("--workout-text-strong", "#fafafa");
+      s.setProperty("--workout-ui", "#d4d4d4");
+      s.setProperty("--workout-stepper-bg", "rgba(255,255,255,0.12)");
+      s.setProperty("--workout-stepper-active", "rgba(255,255,255,0.2)");
+      s.setProperty("--workout-disabled", "rgba(255,255,255,0.35)");
+      s.setProperty("--workout-shadow", "rgba(0,0,0,0.45)");
+    })();
+  </script>
 </head>
 <body class="phase-workout">
   <main class="app">
@@ -466,6 +480,8 @@
     const PHASE_PAUSE = "pause";
     const MIN_DURATION_SEC = 5;
     const BROWSER_UI_KETTLEBELL = "#343434";
+    /** First paint = black workout; then `scheduleWorkoutThemeReveal` applies random (mobile chrome may sample the first). */
+    const WORKOUT_BOOT_PLACEHOLDER_HEX = "#000000";
 
     const KETTLEBELL_WORKOUT_COLORS = [
       { kg: 8, hex: "#ff69b4" },
@@ -581,6 +597,15 @@
         "--workout-shadow",
         `rgba(${Math.round(r * 0.45)},${Math.round(g * 0.45)},${Math.round(b * 0.45)},0.38)`
       );
+    }
+
+    function scheduleWorkoutThemeReveal(applyReal) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          applyReal();
+          updateUI();
+        });
+      });
     }
 
     function getInputValue(input, fallback) {
@@ -739,10 +764,7 @@
       }
     }
 
-    /**
-     * Random `--workout-accent` on a full-area body made mobile browsers tint the URL/status chrome
-     * from the page. We keep `theme-color` + html bg on fixed kettlebell gray instead (not per-band).
-     */
+    /** Fixed `theme-color` metas (html background comes from CSS `--browser-ui-kettlebell`). */
     function installFixedBrowserChrome() {
       const c = BROWSER_UI_KETTLEBELL;
       document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
@@ -829,10 +851,13 @@
       hasStarted = false;
       lastFinishedWorkoutPaletteIndex = null;
       const resetIdx = pickUniformPaletteIndexNot(resolvePaletteIndexFromThemeState());
-      applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[resetIdx].hex, resetIdx);
+      applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX, null);
       setPhase(PHASE_WORKOUT);
       updatePlayButton();
       updateDurationControlsLock();
+      scheduleWorkoutThemeReveal(() => {
+        applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[resetIdx].hex, resetIdx);
+      });
     }
 
     function togglePlayPause() {
@@ -862,10 +887,13 @@
 
     const initialIdx = pickUniformPaletteIndexNot(null);
     installFixedBrowserChrome();
-    applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[initialIdx].hex, initialIdx);
+    applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX, null);
     updateUI();
     updatePlayButton();
     updateDurationControlsLock();
+    scheduleWorkoutThemeReveal(() => {
+      applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[initialIdx].hex, initialIdx);
+    });
   </script>
 </body>
 </html>
