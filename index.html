@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Workout / Pause Timer</title>
+  <style>
+    :root {
+      --bg: #c4d3ec;
+      --panel: rgba(255, 255, 255, 0.25);
+      --text: #111;
+      --work-ring: #0a0a0a;
+      --work-track: rgba(255, 255, 255, 0.38);
+      --pause-ring: #6f7682;
+      --pause-track: rgba(255, 255, 255, 0.42);
+      --tick: rgba(255, 255, 255, 0.95);
+      --inner-work: #f5f5f6;
+      --inner-pause: #667081;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(120deg, #ced8ea 0%, var(--bg) 40%, #b2c3e0 100%);
+      font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      padding:
+        max(16px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+    }
+
+    .app {
+      width: min(440px, 100%);
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(2px);
+      border-radius: 18px;
+      padding: 20px 20px 24px;
+      box-shadow: 0 12px 40px rgba(20, 35, 68, 0.15);
+    }
+
+    .timer {
+      width: min(340px, 78vw);
+      aspect-ratio: 1 / 1;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .ring {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      position: absolute;
+      background:
+        conic-gradient(
+          var(--fill-color) calc(var(--progress, 0) * 1turn),
+          var(--track-color) 0
+        );
+      transition: background-color 160ms linear;
+    }
+
+    .ring::before {
+      content: "";
+      position: absolute;
+      inset: 11%;
+      border-radius: 50%;
+      background: var(--inner-color);
+      transform: rotate(90deg);
+      z-index: 2;
+    }
+
+    .ticks {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      z-index: 3;
+      background: repeating-conic-gradient(
+        var(--tick) 0deg 1.2deg,
+        transparent 1.2deg 30deg
+      );
+      -webkit-mask: radial-gradient(circle, transparent 57%, black 58%, black 68%, transparent 69%);
+      mask: radial-gradient(circle, transparent 57%, black 58%, black 68%, transparent 69%);
+      opacity: 0.95;
+      pointer-events: none;
+    }
+
+    .center {
+      position: relative;
+      z-index: 4;
+      width: 72%;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: clamp(56px, 18vw, 74px);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      user-select: none;
+      transition: color 160ms linear;
+    }
+
+    .meta {
+      text-align: center;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: -4px;
+      min-height: 1em;
+    }
+
+    .controls {
+      width: 100%;
+      display: grid;
+      gap: 10px;
+    }
+
+    .durations {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2a40;
+      touch-action: manipulation;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.86);
+      color: #1f2a40;
+      min-width: 96px;
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.97);
+    }
+
+    .workout {
+      --fill-color: var(--work-ring);
+      --track-color: var(--work-track);
+      --inner-color: var(--inner-work);
+    }
+
+    .pause {
+      --fill-color: var(--pause-ring);
+      --track-color: var(--pause-track);
+      --inner-color: var(--inner-pause);
+    }
+
+    .workout .center {
+      color: #0a0a0a;
+    }
+
+    .pause .center {
+      color: #f2f5fa;
+    }
+
+    @media (max-width: 480px) {
+      .app {
+        gap: 14px;
+        border-radius: 16px;
+        padding: 14px 14px 18px;
+      }
+
+      .timer {
+        width: min(90vw, 360px);
+      }
+
+      .center {
+        font-size: clamp(52px, 20vw, 72px);
+      }
+
+      .durations {
+        gap: 8px;
+      }
+
+      button {
+        flex: 1 1 30%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="timer" class="timer workout">
+      <div class="ring" id="ring" style="--progress:0"></div>
+      <div class="ticks"></div>
+      <div class="center" id="seconds">20</div>
+    </section>
+    <div class="meta" id="phaseLabel">Workout</div>
+
+    <section class="controls">
+      <div class="durations">
+        <label>
+          Workout (sec)
+          <input id="workoutInput" type="number" min="1" value="45" />
+        </label>
+        <label>
+          Pause (sec)
+          <input id="pauseInput" type="number" min="1" value="15" />
+        </label>
+      </div>
+      <div class="buttons">
+        <button id="startBtn">Start</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const timerEl = document.getElementById("timer");
+    const ringEl = document.getElementById("ring");
+    const secondsEl = document.getElementById("seconds");
+    const phaseLabelEl = document.getElementById("phaseLabel");
+    const workoutInput = document.getElementById("workoutInput");
+    const pauseInput = document.getElementById("pauseInput");
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const PHASE_WORKOUT = "workout";
+    const PHASE_PAUSE = "pause";
+
+    let phase = PHASE_WORKOUT;
+    let phaseDuration = getInputValue(workoutInput, 45);
+    let remaining = phaseDuration;
+    let running = false;
+    let rafId = null;
+    let endTimeMs = 0;
+    let audioCtx = null;
+    let beepBufferCache = new Map();
+    let beepedSecond = null;
+
+    function getInputValue(input, fallback) {
+      const value = Number.parseInt(input.value, 10);
+      return Number.isFinite(value) && value > 0 ? value : fallback;
+    }
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true) {
+      const ctx = ensureAudioContext();
+      const sr = ctx.sampleRate;
+      const attack = 0.008;
+      const release = fadeOut ? 0.08 : 0.016;
+      const key = [duration, frequency, gain, attack, release].join("|");
+      let buffer = beepBufferCache.get(key);
+
+      if (!buffer) {
+        const sampleCount = Math.max(1, Math.floor(duration * sr));
+        buffer = ctx.createBuffer(1, sampleCount, sr);
+        const data = buffer.getChannelData(0);
+        const attackSamples = Math.max(1, Math.floor(attack * sr));
+        const releaseSamples = Math.max(1, Math.floor(release * sr));
+        const sustainEnd = Math.max(0, sampleCount - releaseSamples);
+        const twoPiF = 2 * Math.PI * frequency;
+
+        for (let i = 0; i < sampleCount; i += 1) {
+          let env = 1;
+          if (i < attackSamples) {
+            env = i / attackSamples;
+          } else if (i >= sustainEnd) {
+            env = (sampleCount - 1 - i) / releaseSamples;
+          }
+          env = Math.max(0, Math.min(1, env));
+          const t = i / sr;
+          data[i] = Math.sin(twoPiF * t) * gain * env;
+        }
+        // Force exact zero endpoints to avoid boundary clicks.
+        data[0] = 0;
+        data[sampleCount - 1] = 0;
+        beepBufferCache.set(key, buffer);
+      }
+
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      src.start(ctx.currentTime + 0.003);
+    }
+
+    function setPhase(nextPhase) {
+      phase = nextPhase;
+      phaseDuration = phase === PHASE_WORKOUT
+        ? getInputValue(workoutInput, 45)
+        : getInputValue(pauseInput, 15);
+      remaining = phaseDuration;
+      beepedSecond = null;
+      updateUI();
+    }
+
+    function switchPhase() {
+      const next = phase === PHASE_WORKOUT ? PHASE_PAUSE : PHASE_WORKOUT;
+      setPhase(next);
+      if (running) {
+        endTimeMs = performance.now() + remaining * 1000;
+      }
+    }
+
+    function updateUI() {
+      timerEl.classList.toggle("workout", phase === PHASE_WORKOUT);
+      timerEl.classList.toggle("pause", phase === PHASE_PAUSE);
+      const shown = Math.max(0, Math.ceil(remaining));
+      secondsEl.textContent = String(shown);
+      phaseLabelEl.textContent = phase === PHASE_WORKOUT ? "Workout" : "Pause";
+      const doneRatio = 1 - (remaining / phaseDuration);
+      ringEl.style.setProperty("--progress", String(Math.max(0, Math.min(1, doneRatio))));
+    }
+
+    function finishPhase() {
+      beep(0.7, 990, 0.16, false);
+      switchPhase();
+      if (running) {
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+
+    function tick(now) {
+      if (!running) return;
+      remaining = Math.max(0, (endTimeMs - now) / 1000);
+      const shown = Math.ceil(remaining);
+
+      if (shown !== beepedSecond) {
+        if (shown >= 1 && shown <= 3) {
+          beep(0.25, 990, 0.16);
+        }
+        beepedSecond = shown;
+      }
+
+      updateUI();
+
+      if (remaining <= 0) {
+        finishPhase();
+        return;
+      }
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function startTimer() {
+      if (running) return;
+      ensureAudioContext().resume();
+      running = true;
+      endTimeMs = performance.now() + remaining * 1000;
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function pauseTimer() {
+      if (!running) return;
+      running = false;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      setPhase(PHASE_WORKOUT);
+    }
+
+    startBtn.addEventListener("click", startTimer);
+    pauseBtn.addEventListener("click", pauseTimer);
+    resetBtn.addEventListener("click", resetTimer);
+
+    workoutInput.addEventListener("change", () => {
+      if (phase === PHASE_WORKOUT && !running) {
+        setPhase(PHASE_WORKOUT);
+      }
+    });
+
+    pauseInput.addEventListener("change", () => {
+      if (phase === PHASE_PAUSE && !running) {
+        setPhase(PHASE_PAUSE);
+      }
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>
