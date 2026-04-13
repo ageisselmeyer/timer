@@ -8,16 +8,7 @@
   <title>Workout / Pause Timer</title>
   <style>
     :root {
-      --bg: #c4d3ec;
-      --panel: rgba(255, 255, 255, 0.25);
       --text: #111;
-      --work-ring: #0a0a0a;
-      --work-track: rgba(255, 255, 255, 0.38);
-      --pause-ring: #6f7682;
-      --pause-track: rgba(255, 255, 255, 0.42);
-      --tick: rgba(255, 255, 255, 0.95);
-      --inner-work: #f5f5f6;
-      --inner-pause: #667081;
     }
 
     html,
@@ -26,7 +17,6 @@
       height: 100%;
       overflow: hidden;
       overscroll-behavior: none;
-      background: linear-gradient(120deg, #ced8ea 0%, var(--bg) 40%, #b2c3e0 100%);
     }
 
     * {
@@ -48,6 +38,19 @@
         max(16px, env(safe-area-inset-right))
         max(16px, env(safe-area-inset-bottom))
         max(16px, env(safe-area-inset-left));
+      transition:
+        background 0.45s ease,
+        color 0.35s ease;
+    }
+
+    body.phase-workout {
+      background: linear-gradient(125deg, #7dd3fc 0%, #38bdf8 35%, #0ea5e9 72%, #0284c7 100%);
+      color: #0c1929;
+    }
+
+    body.phase-pause {
+      background: linear-gradient(145deg, #020f0a 0%, #0d2818 38%, #1b4332 72%, #2d6a4f 100%);
+      color: #e8f5e9;
     }
 
     .app {
@@ -55,12 +58,25 @@
       display: grid;
       gap: 18px;
       justify-items: center;
-      background: var(--panel);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      backdrop-filter: blur(2px);
+      backdrop-filter: blur(8px);
       border-radius: 18px;
       padding: 20px 20px 24px;
-      box-shadow: 0 12px 40px rgba(20, 35, 68, 0.15);
+      transition:
+        background 0.45s ease,
+        border-color 0.35s ease,
+        box-shadow 0.45s ease;
+    }
+
+    body.phase-workout .app {
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow: 0 14px 44px rgba(14, 116, 200, 0.32);
+    }
+
+    body.phase-pause .app {
+      background: rgba(13, 40, 31, 0.58);
+      border: 1px solid rgba(149, 213, 178, 0.38);
+      box-shadow: 0 14px 48px rgba(0, 0, 0, 0.42);
     }
 
     .timer {
@@ -252,23 +268,103 @@
     }
 
     .workout {
-      --fill-color: var(--work-ring);
-      --track-color: var(--work-track);
-      --inner-color: var(--inner-work);
+      --fill-color: #0284c7;
+      --track-color: rgba(255, 255, 255, 0.52);
+      --inner-color: #eff6ff;
+      --tick: rgba(255, 255, 255, 0.96);
     }
 
     .pause {
-      --fill-color: var(--pause-ring);
-      --track-color: var(--pause-track);
-      --inner-color: var(--inner-pause);
+      --fill-color: #40916c;
+      --track-color: rgba(255, 255, 255, 0.22);
+      --inner-color: #1b4332;
+      --tick: rgba(216, 243, 220, 0.9);
     }
 
     .workout .center {
-      color: #0a0a0a;
+      color: #1e3a8a;
     }
 
     .pause .center {
-      color: #f2f5fa;
+      color: #d8f3dc;
+    }
+
+    body.phase-workout .meta {
+      color: #1d4ed8;
+    }
+
+    body.phase-pause .meta {
+      color: #95d5b2;
+    }
+
+    body.phase-workout .durations > label {
+      color: #1e40af;
+    }
+
+    body.phase-pause .durations > label {
+      color: #b7e4c7;
+    }
+
+    body.phase-workout .field-stepper {
+      border-color: rgba(255, 255, 255, 0.65);
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    body.phase-workout .field-stepper input[type="number"] {
+      color: #0f172a;
+    }
+
+    body.phase-workout .stepper-btn {
+      background: rgba(37, 99, 235, 0.16);
+      color: #1d4ed8;
+    }
+
+    body.phase-workout .stepper-btn:active {
+      background: rgba(37, 99, 235, 0.28);
+    }
+
+    body.phase-pause .field-stepper {
+      border-color: rgba(149, 213, 178, 0.42);
+      background: rgba(8, 28, 21, 0.72);
+    }
+
+    body.phase-pause .field-stepper input[type="number"] {
+      color: #e8f5e9;
+    }
+
+    body.phase-pause .stepper-btn {
+      background: rgba(255, 255, 255, 0.12);
+      color: #d8f3dc;
+    }
+
+    body.phase-pause .stepper-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    body.phase-workout .field-stepper input:disabled {
+      color: rgba(30, 64, 175, 0.55);
+    }
+
+    body.phase-pause .field-stepper input:disabled {
+      color: rgba(232, 245, 233, 0.45);
+    }
+
+    body.phase-workout .buttons button {
+      background: rgba(255, 255, 255, 0.94);
+      color: #1d4ed8;
+    }
+
+    body.phase-workout .buttons button:hover {
+      background: #ffffff;
+    }
+
+    body.phase-pause .buttons button {
+      background: rgba(64, 145, 108, 0.92);
+      color: #f0fdf4;
+    }
+
+    body.phase-pause .buttons button:hover {
+      background: rgba(82, 183, 136, 0.98);
     }
 
     @media (max-width: 480px) {
@@ -296,12 +392,12 @@
     }
   </style>
 </head>
-<body>
+<body class="phase-workout">
   <main class="app">
     <section id="timer" class="timer workout">
       <div class="ring" id="ring" style="--progress:0"></div>
       <div class="ticks"></div>
-      <div class="center" id="seconds">20</div>
+      <div class="center" id="seconds">40</div>
     </section>
     <div class="meta" id="phaseLabel">Workout</div>
 
@@ -311,7 +407,7 @@
           Workout (sec)
           <div class="field-stepper">
             <button type="button" class="stepper-btn" id="workoutMinus" aria-label="Decrease workout by 5 seconds">−</button>
-            <input id="workoutInput" type="number" min="1" value="45" inputmode="numeric" />
+            <input id="workoutInput" type="number" min="1" value="40" inputmode="numeric" />
             <button type="button" class="stepper-btn" id="workoutPlus" aria-label="Increase workout by 5 seconds">+</button>
           </div>
         </label>
@@ -319,7 +415,7 @@
           Pause (sec)
           <div class="field-stepper">
             <button type="button" class="stepper-btn" id="pauseMinus" aria-label="Decrease pause by 5 seconds">−</button>
-            <input id="pauseInput" type="number" min="1" value="15" inputmode="numeric" />
+            <input id="pauseInput" type="number" min="1" value="20" inputmode="numeric" />
             <button type="button" class="stepper-btn" id="pausePlus" aria-label="Increase pause by 5 seconds">+</button>
           </div>
         </label>
@@ -345,7 +441,7 @@
     const PHASE_PAUSE = "pause";
 
     let phase = PHASE_WORKOUT;
-    let phaseDuration = getInputValue(workoutInput, 45);
+    let phaseDuration = getInputValue(workoutInput, 40);
     let remaining = phaseDuration;
     let running = false;
     let rafId = null;
@@ -417,7 +513,7 @@
 
     function stepDuration(input, delta) {
       if (hasStarted) return;
-      const fallback = input === workoutInput ? 45 : 15;
+      const fallback = input === workoutInput ? 40 : 20;
       let next = getInputValue(input, fallback) + delta;
       if (next < 1) next = 1;
       input.value = String(next);
@@ -474,8 +570,8 @@
     function setPhase(nextPhase) {
       phase = nextPhase;
       phaseDuration = phase === PHASE_WORKOUT
-        ? getInputValue(workoutInput, 45)
-        : getInputValue(pauseInput, 15);
+        ? getInputValue(workoutInput, 40)
+        : getInputValue(pauseInput, 20);
       remaining = phaseDuration;
       beepedSecond = null;
       updateUI();
@@ -492,6 +588,8 @@
     function updateUI() {
       timerEl.classList.toggle("workout", phase === PHASE_WORKOUT);
       timerEl.classList.toggle("pause", phase === PHASE_PAUSE);
+      document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
+      document.body.classList.toggle("phase-pause", phase === PHASE_PAUSE);
       const shown = Math.max(0, Math.ceil(remaining));
       secondsEl.textContent = String(shown);
       phaseLabelEl.textContent = phase === PHASE_WORKOUT ? "Workout" : "Pause";
