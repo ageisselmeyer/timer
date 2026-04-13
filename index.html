@@ -290,6 +290,30 @@
     let audioCtx = null;
     let beepBufferCache = new Map();
     let beepedSecond = null;
+    let wakeLock = null;
+
+    async function acquireWakeLock() {
+      if (!("wakeLock" in navigator)) return;
+      try {
+        if (wakeLock && !wakeLock.released) return;
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.addEventListener("release", () => {
+          wakeLock = null;
+        });
+      } catch {
+        wakeLock = null;
+      }
+    }
+
+    async function releaseWakeLock() {
+      if (!wakeLock) return;
+      try {
+        await wakeLock.release();
+      } catch {
+        /* ignore */
+      }
+      wakeLock = null;
+    }
 
     function getInputValue(input, fallback) {
       const value = Number.parseInt(input.value, 10);
@@ -406,12 +430,14 @@
       ensureAudioContext().resume();
       running = true;
       endTimeMs = performance.now() + remaining * 1000;
+      void acquireWakeLock();
       rafId = requestAnimationFrame(tick);
     }
 
     function pauseTimer() {
       if (!running) return;
       running = false;
+      void releaseWakeLock();
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -422,6 +448,12 @@
       pauseTimer();
       setPhase(PHASE_WORKOUT);
     }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && running) {
+        void acquireWakeLock();
+      }
+    });
 
     startBtn.addEventListener("click", startTimer);
     pauseBtn.addEventListener("click", pauseTimer);
