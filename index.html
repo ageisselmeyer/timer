@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#2c9323" />
+  <meta name="theme-color" content="#343434" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta id="appleStatusBarMeta" name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Workout / Pause Timer</title>
   <style>
     :root {
       --text: #111;
+      --pause-bg: #a8b0bd;
       --workout-accent: #2c9323;
       --workout-inner: #ecfdf5;
       --workout-body-text: #052e16;
@@ -59,7 +60,7 @@
     }
 
     body.phase-pause {
-      background: #a8b0bd;
+      background: var(--pause-bg);
       color: #1e293b;
     }
 
@@ -446,12 +447,16 @@
     const pauseInput = document.getElementById("pauseInput");
     const playBtn = document.getElementById("playBtn");
     const resetBtn = document.getElementById("resetBtn");
+    const workoutMinus = document.getElementById("workoutMinus");
+    const workoutPlus = document.getElementById("workoutPlus");
+    const pauseMinus = document.getElementById("pauseMinus");
+    const pausePlus = document.getElementById("pausePlus");
 
     const PHASE_WORKOUT = "workout";
     const PHASE_PAUSE = "pause";
     const MIN_DURATION_SEC = 5;
+    const BROWSER_UI_KETTLEBELL = "#343434";
 
-    /** Official-style kettlebell band colors (kg → hex). */
     const KETTLEBELL_WORKOUT_COLORS = [
       { kg: 8, hex: "#ff69b4" },
       { kg: 12, hex: "#2187f3" },
@@ -462,14 +467,9 @@
       { kg: 32, hex: "#ff0000" },
     ];
 
-    /** Set after first `applyWorkoutThemeFromHex`; null avoids mismatching default green with `workoutColorIndex === null`. */
     let workoutThemeHex = null;
-    /** Index into KETTLEBELL_WORKOUT_COLORS for the current workout theme (0..length-1). */
     let workoutColorIndex = null;
-    /**
-     * Palette index of the workout segment that just ended, captured when leaving workout for pause.
-     * Used for the next pause→workout pick so we never repeat that band even if other state drifts.
-     */
+    /** Set when leaving workout for pause; used to pick a different band on the next workout. */
     let lastFinishedWorkoutPaletteIndex = null;
 
     function normalizeHex(hex) {
@@ -521,7 +521,6 @@
       return j;
     }
 
-    /** Resolve palette index from JS theme state (index wins; else match `workoutThemeHex` to palette). */
     function resolvePaletteIndexFromThemeState() {
       const byIdx = normalizePaletteIndex(workoutColorIndex);
       if (byIdx !== null) return byIdx;
@@ -533,10 +532,7 @@
       return fi >= 0 ? fi : null;
     }
 
-    /**
-     * Uniform random index in [0, n), guaranteed !== exclude when exclude is a valid index.
-     * If exclude is null/invalid, uniform over all indices (e.g. first-ever pick).
-     */
+    /** Uniform in [0, n); if exclude is a valid palette index, never returns that index. */
     function pickUniformPaletteIndexNot(exclude) {
       const n = KETTLEBELL_WORKOUT_COLORS.length;
       const e = normalizePaletteIndex(exclude);
@@ -577,19 +573,21 @@
       );
     }
 
+    function getInputValue(input, fallback) {
+      const value = Number.parseInt(input.value, 10);
+      return Number.isFinite(value) && value >= MIN_DURATION_SEC ? value : fallback;
+    }
+
     let phase = PHASE_WORKOUT;
-    /** Used so theme-color / html bg update on pause↔workout and whenever the workout band color changes. */
-    let lastSyncedBrowserChromeKey = null;
     let phaseDuration = getInputValue(workoutInput, 40);
     let remaining = phaseDuration;
     let running = false;
     let rafId = null;
     let endTimeMs = 0;
     let audioCtx = null;
-    let beepBufferCache = new Map();
+    const beepBufferCache = new Map();
     let beepedSecond = null;
     let wakeLock = null;
-    /** True after first Start until Reset — drives Play button label (Start vs Resume). */
     let hasStarted = false;
 
     function updatePlayButton() {
@@ -606,10 +604,10 @@
       const locked = hasStarted;
       workoutInput.disabled = locked;
       pauseInput.disabled = locked;
-      document.getElementById("workoutMinus").disabled = locked;
-      document.getElementById("workoutPlus").disabled = locked;
-      document.getElementById("pauseMinus").disabled = locked;
-      document.getElementById("pausePlus").disabled = locked;
+      workoutMinus.disabled = locked;
+      workoutPlus.disabled = locked;
+      pauseMinus.disabled = locked;
+      pausePlus.disabled = locked;
     }
 
     async function acquireWakeLock() {
@@ -633,11 +631,6 @@
         /* ignore */
       }
       wakeLock = null;
-    }
-
-    function getInputValue(input, fallback) {
-      const value = Number.parseInt(input.value, 10);
-      return Number.isFinite(value) && value >= MIN_DURATION_SEC ? value : fallback;
     }
 
     function applyDurationInputChange(input) {
@@ -720,9 +713,7 @@
 
       if (next === PHASE_WORKOUT) {
         const exclude =
-          lastFinishedWorkoutPaletteIndex !== null
-            ? lastFinishedWorkoutPaletteIndex
-            : resolvePaletteIndexFromThemeState();
+          lastFinishedWorkoutPaletteIndex ?? resolvePaletteIndexFromThemeState();
         lastFinishedWorkoutPaletteIndex = null;
         const nextIdx = pickUniformPaletteIndexNot(exclude);
         applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[nextIdx].hex, nextIdx);
@@ -736,45 +727,24 @@
       if (running) {
         endTimeMs = performance.now() + remaining * 1000;
       }
-      if (next === PHASE_WORKOUT) {
-        syncBrowserChromeDeferred();
-      }
     }
 
-    /**
-     * iOS Safari often ignores `theme-color` updates when only `content` changes.
-     * Replace meta tag(s) and match `html` bg so the chrome + overscroll match the phase.
-     */
-    function syncBrowserChrome() {
-      const isWorkout = phase === PHASE_WORKOUT;
-      const color = isWorkout ? workoutThemeHex ?? "#2c9323" : "#a8b0bd";
-      document.documentElement.style.backgroundColor = color;
+    /** Fixed `theme-color` + root bg (dynamic workout colors are unreliable in mobile browser UI). */
+    function installFixedBrowserChrome() {
+      const c = BROWSER_UI_KETTLEBELL;
+      document.documentElement.style.backgroundColor = c;
       document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
-      const main = document.createElement("meta");
-      main.setAttribute("name", "theme-color");
-      main.setAttribute("content", color);
-      document.head.prepend(main);
+      const makeMeta = (extra) => {
+        const el = document.createElement("meta");
+        el.setAttribute("name", "theme-color");
+        el.setAttribute("content", c);
+        if (extra) el.setAttribute("media", extra);
+        return el;
+      };
+      document.head.prepend(makeMeta());
       for (const media of ["(prefers-color-scheme: light)", "(prefers-color-scheme: dark)"]) {
-        const m = document.createElement("meta");
-        m.setAttribute("name", "theme-color");
-        m.setAttribute("content", color);
-        m.setAttribute("media", media);
-        document.head.appendChild(m);
+        document.head.appendChild(makeMeta(media));
       }
-      const appleBar = document.getElementById("appleStatusBarMeta");
-      if (appleBar) {
-        appleBar.setAttribute("content", isWorkout ? "black-translucent" : "default");
-      }
-    }
-
-    /** WebKit often drops theme-color if the meta swap happens in the same synchronous turn as other DOM updates. */
-    function syncBrowserChromeDeferred() {
-      requestAnimationFrame(() => {
-        syncBrowserChrome();
-        requestAnimationFrame(() => {
-          syncBrowserChrome();
-        });
-      });
     }
 
     function updateUI() {
@@ -782,14 +752,6 @@
       timerEl.classList.toggle("pause", phase === PHASE_PAUSE);
       document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
       document.body.classList.toggle("phase-pause", phase === PHASE_PAUSE);
-      const chromeKey =
-        phase === PHASE_WORKOUT
-          ? `w:${workoutThemeHex ?? ""}`
-          : "p";
-      if (lastSyncedBrowserChromeKey !== chromeKey) {
-        lastSyncedBrowserChromeKey = chromeKey;
-        syncBrowserChrome();
-      }
       const shown = Math.max(0, Math.ceil(remaining));
       secondsEl.textContent = String(shown);
       phaseLabelEl.textContent = phase === PHASE_WORKOUT ? "Workout" : "Pause";
@@ -856,12 +818,7 @@
       lastFinishedWorkoutPaletteIndex = null;
       const resetIdx = pickUniformPaletteIndexNot(resolvePaletteIndexFromThemeState());
       applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[resetIdx].hex, resetIdx);
-      lastSyncedBrowserChromeKey = null;
       setPhase(PHASE_WORKOUT);
-      syncBrowserChrome();
-      lastSyncedBrowserChromeKey =
-        phase === PHASE_WORKOUT ? `w:${workoutThemeHex ?? ""}` : "p";
-      syncBrowserChromeDeferred();
       updatePlayButton();
       updateDurationControlsLock();
     }
@@ -886,13 +843,14 @@
     workoutInput.addEventListener("change", () => applyDurationInputChange(workoutInput));
     pauseInput.addEventListener("change", () => applyDurationInputChange(pauseInput));
 
-    document.getElementById("workoutMinus").addEventListener("click", () => stepDuration(workoutInput, -5));
-    document.getElementById("workoutPlus").addEventListener("click", () => stepDuration(workoutInput, 5));
-    document.getElementById("pauseMinus").addEventListener("click", () => stepDuration(pauseInput, -5));
-    document.getElementById("pausePlus").addEventListener("click", () => stepDuration(pauseInput, 5));
+    workoutMinus.addEventListener("click", () => stepDuration(workoutInput, -5));
+    workoutPlus.addEventListener("click", () => stepDuration(workoutInput, 5));
+    pauseMinus.addEventListener("click", () => stepDuration(pauseInput, -5));
+    pausePlus.addEventListener("click", () => stepDuration(pauseInput, 5));
 
     const initialIdx = pickUniformPaletteIndexNot(null);
     applyWorkoutThemeFromHex(KETTLEBELL_WORKOUT_COLORS[initialIdx].hex, initialIdx);
+    installFixedBrowserChrome();
     updateUI();
     updatePlayButton();
     updateDurationControlsLock();
