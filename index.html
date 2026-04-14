@@ -3,16 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#211f1e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Workout Timer</title>
   <style>
     :root {
       --text: #111;
-      --browser-ui-kettlebell: #000000;
+      /* Page + card surface; band color is only for timer ring + glow. */
+      --kettlebell-black: #211f1e;
+      --browser-ui-kettlebell: var(--kettlebell-black);
       --pause-bg: #a8b0bd;
       --workout-accent: #000000;
+      --workout-accent-rgb: 0 0 0;
       --workout-inner: #1a1a1a;
       --workout-body-text: #e8e8e8;
       --workout-text-strong: #fafafa;
@@ -61,7 +64,7 @@
     }
 
     body.phase-workout {
-      background: var(--workout-accent);
+      background: var(--kettlebell-black);
       color: var(--workout-body-text);
     }
 
@@ -71,29 +74,48 @@
     }
 
     .app {
+      --app-radius: 18px;
+      position: relative;
       width: min(440px, 100%);
       display: grid;
       gap: 18px;
       justify-items: center;
-      backdrop-filter: blur(8px);
-      border-radius: 18px;
+      backdrop-filter: none;
+      border-radius: var(--app-radius);
       padding: 20px 20px 24px;
-      transition:
-        background 0.45s ease,
-        border-color 0.35s ease,
-        box-shadow 0.45s ease;
+      transition: background 0.45s ease, border-color 0.35s ease;
     }
 
     body.phase-workout .app {
-      background: rgba(255, 255, 255, 0.48);
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      box-shadow: 0 14px 44px var(--workout-shadow);
+      background: var(--kettlebell-black);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: workout-card-glow-pulse 3.2s ease-in-out infinite;
     }
 
     body.phase-pause .app {
-      background: rgba(255, 255, 255, 0.52);
+      background: rgba(255, 255, 255, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.7);
       box-shadow: 0 14px 40px rgba(30, 41, 59, 0.14);
+    }
+
+    @keyframes workout-card-glow-pulse {
+      0%,
+      100% {
+        box-shadow:
+          0 0 0 1px rgb(var(--workout-accent-rgb) / 0.32),
+          0 0 28px rgb(var(--workout-accent-rgb) / 0.42),
+          0 0 64px rgb(var(--workout-accent-rgb) / 0.26),
+          0 0 110px rgb(var(--workout-accent-rgb) / 0.14),
+          0 20px 50px rgba(0, 0, 0, 0.55);
+      }
+      50% {
+        box-shadow:
+          0 0 0 1px rgb(var(--workout-accent-rgb) / 0.5),
+          0 0 40px rgb(var(--workout-accent-rgb) / 0.55),
+          0 0 88px rgb(var(--workout-accent-rgb) / 0.34),
+          0 0 140px rgb(var(--workout-accent-rgb) / 0.2),
+          0 20px 50px rgba(0, 0, 0, 0.55);
+      }
     }
 
     .timer {
@@ -248,7 +270,6 @@
     }
 
     .field-stepper input:disabled {
-      color: #5a6578;
       cursor: not-allowed;
     }
 
@@ -322,17 +343,13 @@
     }
 
     body.phase-workout .field-stepper {
-      border-color: rgba(255, 255, 255, 0.65);
-      background: rgba(255, 255, 255, 0.88);
-    }
-
-    body.phase-workout .field-stepper input[type="number"] {
-      color: #0f172a;
+      border-color: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
     }
 
     body.phase-workout .stepper-btn {
       background: var(--workout-stepper-bg);
-      color: var(--workout-ui);
+      color: #ffffff;
     }
 
     body.phase-workout .stepper-btn:active {
@@ -344,25 +361,50 @@
       background: rgba(255, 255, 255, 0.82);
     }
 
-    body.phase-pause .field-stepper input[type="number"] {
-      color: #1e293b;
-    }
-
     body.phase-pause .stepper-btn {
       background: rgba(71, 85, 105, 0.12);
-      color: #475569;
+      color: #ffffff;
     }
 
     body.phase-pause .stepper-btn:active {
       background: rgba(71, 85, 105, 0.2);
     }
 
-    body.phase-workout .field-stepper input:disabled {
-      color: var(--workout-disabled);
+    /* Duration values: before start = same as Start; after start = same as center counter. */
+    body.phase-workout:not(.has-started) .durations > label:first-child input[type="number"],
+    body.phase-workout:not(.has-started) .durations > label:nth-child(2) input[type="number"],
+    body.phase-workout:not(.has-started) #workoutInput,
+    body.phase-workout:not(.has-started) #pauseInput {
+      color: var(--workout-accent);
+      -webkit-text-fill-color: var(--workout-accent);
     }
 
-    body.phase-pause .field-stepper input:disabled {
-      color: rgba(30, 41, 59, 0.45);
+    body.phase-pause:not(.has-started) .durations > label:first-child input[type="number"],
+    body.phase-pause:not(.has-started) .durations > label:nth-child(2) input[type="number"],
+    body.phase-pause:not(.has-started) #workoutInput,
+    body.phase-pause:not(.has-started) #pauseInput {
+      color: #475569;
+      -webkit-text-fill-color: #475569;
+    }
+
+    body.phase-workout.has-started .durations > label:first-child input[type="number"]:disabled,
+    body.phase-workout.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
+    body.phase-workout.has-started #workoutInput:disabled,
+    body.phase-workout.has-started #pauseInput:disabled {
+      color: var(--workout-text-strong);
+      -webkit-text-fill-color: var(--workout-text-strong);
+    }
+
+    body.phase-pause.has-started .durations > label:first-child input[type="number"]:disabled,
+    body.phase-pause.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
+    body.phase-pause.has-started #workoutInput:disabled,
+    body.phase-pause.has-started #pauseInput:disabled {
+      color: #1e293b;
+      -webkit-text-fill-color: #1e293b;
+    }
+
+    body.has-started .field-stepper input[type="number"]:disabled {
+      opacity: 1;
     }
 
     body.phase-workout .buttons button {
@@ -385,8 +427,8 @@
 
     @media (max-width: 480px) {
       .app {
+        --app-radius: 16px;
         gap: 14px;
-        border-radius: 16px;
         padding: 14px 14px 18px;
       }
 
@@ -514,19 +556,28 @@
       );
     }
 
-    function syncBrowserChrome(colorHex) {
-      document.documentElement.style.setProperty("--browser-ui-kettlebell", colorHex);
-      document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
-      const makeMeta = (media) => {
-        const el = document.createElement("meta");
-        el.setAttribute("name", "theme-color");
-        el.setAttribute("content", colorHex);
-        if (media) el.setAttribute("media", media);
-        return el;
-      };
-      document.head.prepend(makeMeta());
-      document.head.appendChild(makeMeta("(prefers-color-scheme: light)"));
-      document.head.appendChild(makeMeta("(prefers-color-scheme: dark)"));
+    const KETTLEBELL_PAGE_HEX = "#211f1e";
+
+    function syncBrowserChrome() {
+      document.documentElement.style.setProperty("--browser-ui-kettlebell", KETTLEBELL_PAGE_HEX);
+
+      function upsertThemeColor(mediaAttr) {
+        const metas = [...document.head.querySelectorAll('meta[name="theme-color"]')];
+        const match = (m) =>
+          mediaAttr == null ? !m.hasAttribute("media") : m.getAttribute("media") === mediaAttr;
+        let el = metas.find(match);
+        if (!el) {
+          el = document.createElement("meta");
+          el.setAttribute("name", "theme-color");
+          if (mediaAttr != null) el.setAttribute("media", mediaAttr);
+          document.head.appendChild(el);
+        }
+        el.setAttribute("content", KETTLEBELL_PAGE_HEX);
+      }
+
+      upsertThemeColor(null);
+      upsertThemeColor("(prefers-color-scheme: light)");
+      upsertThemeColor("(prefers-color-scheme: dark)");
     }
 
     function applyWorkoutThemeFromHex(hex) {
@@ -534,6 +585,7 @@
       const { r, g, b } = hexToRgb(canonical);
       const root = document.documentElement;
       root.style.setProperty("--workout-accent", canonical);
+      root.style.setProperty("--workout-accent-rgb", `${r} ${g} ${b}`);
       root.style.setProperty("--workout-inner", blendHex("#ffffff", canonical, 0.14));
       root.style.setProperty("--workout-body-text", blendHex("#0f172a", canonical, 0.1));
       root.style.setProperty("--workout-text-strong", blendHex("#0f172a", canonical, 0.45));
@@ -545,7 +597,7 @@
         "--workout-shadow",
         `rgba(${Math.round(r * 0.45)},${Math.round(g * 0.45)},${Math.round(b * 0.45)},0.38)`
       );
-      syncBrowserChrome(canonical);
+      syncBrowserChrome();
     }
 
     function scheduleWorkoutThemeReveal(applyReal) {
@@ -575,6 +627,7 @@
     let hasStarted = false;
 
     function updatePlayButton() {
+      document.body.classList.toggle("has-started", hasStarted);
       if (!hasStarted) {
         playBtn.textContent = "Start";
       } else if (running) {
