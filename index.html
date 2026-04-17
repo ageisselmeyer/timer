@@ -526,6 +526,14 @@
     const restMinus = document.getElementById("restMinus");
     const restPlus = document.getElementById("restPlus");
 
+    try {
+      if (typeof navigator !== "undefined" && navigator.audioSession) {
+        navigator.audioSession.type = "playback";
+      }
+    } catch {
+      /* ignore */
+    }
+
     const PHASE_WORKOUT = "workout";
     const PHASE_REST = "rest";
     const MIN_DURATION_SEC = 5;
@@ -684,6 +692,7 @@
     let rafId = null;
     let endTimeMs = 0;
     let webAudioCtx = null;
+    let webAudioResumePromise = null;
     const webAudioBufferCache = new Map();
     let beepedSecond = null;
     let wakeLock = null;
@@ -788,6 +797,34 @@
       return webAudioCtx;
     }
 
+    function resumeWebAudioContext() {
+      const ctx = ensureWebAudioContext();
+      if (!ctx) return Promise.resolve();
+      if (ctx.state === "running") return Promise.resolve();
+      if (!webAudioResumePromise) {
+        webAudioResumePromise = ctx
+          .resume()
+          .catch(() => {})
+          .finally(() => {
+            webAudioResumePromise = null;
+          });
+      }
+      return webAudioResumePromise;
+    }
+
+    function primeWebAudioOutput(ctx) {
+      if (!ctx || ctx.state !== "running") return;
+      try {
+        const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start();
+      } catch {
+        /* ignore */
+      }
+    }
+
     function ensureBeepBuffer(duration, frequency, gain, fadeOut) {
       const ctx = ensureWebAudioContext();
       if (!ctx) return null;
@@ -808,21 +845,32 @@
       ensureBeepBuffer(0.7, 990, 0.16, false);  // 0/end
     }
 
-    function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true) {
+    function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true, idealWallMs) {
       const ctx = ensureWebAudioContext();
       const buffer = ensureBeepBuffer(duration, frequency, gain, fadeOut);
       if (!ctx || !buffer) return;
-      const playNow = () => {
-        const src = ctx.createBufferSource();
+      void (async () => {
+        await resumeWebAudioContext();
+        const ac = ensureWebAudioContext();
+        if (!ac || ac.state !== "running") return;
+        const src = ac.createBufferSource();
         src.buffer = buffer;
-        src.connect(ctx.destination);
-        src.start(ctx.currentTime + 0.001);
-      };
-      if (ctx.state === "running") {
-        playNow();
-      } else {
-        void ctx.resume().then(playNow).catch(() => {});
-      }
+        src.connect(ac.destination);
+        const scheduled =
+          idealWallMs !== undefined && Number.isFinite(idealWallMs) ? Number(idealWallMs) : null;
+        const deltaSec =
+          scheduled == null ? 1 / ac.sampleRate : (scheduled - performance.now()) / 1000;
+        const when = ac.currentTime + Math.max(1 / ac.sampleRate, deltaSec);
+        try {
+          src.start(when);
+        } catch {
+          try {
+            src.start(ac.currentTime + 1 / ac.sampleRate);
+          } catch {
+            /* ignore */
+          }
+        }
+      })();
     }
 
     function setPhase(nextPhase) {
@@ -873,9 +921,9 @@
 
       if (shown !== beepedSecond) {
         if (shown >= 1 && shown <= 3) {
-          beep(0.25, 990, 0.16);
+          beep(0.25, 990, 0.16, true, endTimeMs - shown * 1000);
         } else if (shown === 0) {
-          beep(0.7, 990, 0.16, false);
+          beep(0.7, 990, 0.16, false, endTimeMs);
           beepedSecond = shown;
           finishPhase();
           return;
@@ -895,14 +943,7 @@
 
     async function startTimer() {
       if (running) return;
-      const ctx = ensureWebAudioContext();
-      if (ctx && ctx.state !== "running") {
-        try {
-          await ctx.resume();
-        } catch {
-          /* ignore */
-        }
-      }
+      await resumeWebAudioContext();
       hasStarted = true;
       running = true;
       endTimeMs = performance.now() + remaining * 1000;
@@ -940,23 +981,40 @@
     }
 
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        if (running) {
-          void acquireWakeLock();
+      if (document.visibilityState === "visible" && running) {
+        void acquireWakeLock();
+        void (async () => {
+          await resumeWebAudioContext();
           const ctx = ensureWebAudioContext();
-          if (ctx && ctx.state !== "running") {
-            void ctx.resume();
+          if (ctx && ctx.state === "running") {
+            primeWebAudioOutput(ctx);
           }
-        }
+        })();
       }
     });
 
+    window.addEventListener(
+      "focus",
+      () => {
+        if (!running) return;
+        void resumeWebAudioContext().then(() => {
+          const ctx = ensureWebAudioContext();
+          if (ctx && ctx.state === "running") {
+            primeWebAudioOutput(ctx);
+          }
+        });
+      },
+      { passive: true }
+    );
+
     window.addEventListener("pageshow", () => {
       initializeBeepAudio();
-      const ctx = ensureWebAudioContext();
-      if (ctx && ctx.state !== "running") {
-        void ctx.resume();
-      }
+      void resumeWebAudioContext().then(() => {
+        const ctx = ensureWebAudioContext();
+        if (ctx && ctx.state === "running") {
+          primeWebAudioOutput(ctx);
+        }
+      });
       recalcDotGridSteps();
     });
 
