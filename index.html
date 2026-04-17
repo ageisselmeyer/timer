@@ -27,8 +27,11 @@
     html {
       background-color: var(--browser-ui-kettlebell);
       width: 100%;
+      max-width: 100%;
       min-height: 100%;
+      min-height: -webkit-fill-available;
       overflow: hidden;
+      overflow-x: hidden;
       overscroll-behavior: none;
     }
 
@@ -40,7 +43,12 @@
     /* Body inset by safe areas; html background (--browser-ui-kettlebell) fills the outer strips. */
     body {
       margin: 0;
+      width: 100%;
+      max-width: 100%;
+      min-height: 100%;
+      min-height: -webkit-fill-available;
       overflow: hidden;
+      overflow-x: hidden;
       overscroll-behavior: none;
       position: fixed;
       top: constant(safe-area-inset-top);
@@ -142,7 +150,7 @@
     }
 
     .timer {
-      width: min(340px, 78vw);
+      width: min(340px, 100%);
       aspect-ratio: 1 / 1;
       position: relative;
       display: grid;
@@ -456,7 +464,7 @@
       }
 
       .timer {
-        width: min(82vw, 320px);
+        width: min(100%, 320px);
       }
 
       .center {
@@ -642,23 +650,39 @@
       });
     }
 
-    function recalcDotGridSteps() {
+    function recalcDotGridSteps(retry = 0) {
       if (!appEl) return;
       const cs = getComputedStyle(appEl);
       const band = Number.parseFloat(cs.getPropertyValue("--dot-band")) || 80;
       const dotSize = Number.parseFloat(cs.getPropertyValue("--dot-size")) || 4;
       const rect = appEl.getBoundingClientRect();
+      /* Safari can report 0/stale sizes for a frame after tab restore; retry a few paints. */
+      if (rect.width < 2 || rect.height < 2) {
+        if (retry < 12) {
+          requestAnimationFrame(() => recalcDotGridSteps(retry + 1));
+        }
+        return;
+      }
       const totalW = rect.width + 2 * band;
       const totalH = rect.height + 2 * band;
       const cols = 15;
       const rows = 18;
       const stepX = totalW / cols;
       const stepY = totalH / rows;
-      appEl.style.setProperty("--dot-step-x", `${stepX}px`);
-      appEl.style.setProperty("--dot-step-y", `${stepY}px`);
+      const rx = (n) => Math.round(n * 1000) / 1000;
+      appEl.style.setProperty("--dot-step-x", `${rx(stepX)}px`);
+      appEl.style.setProperty("--dot-step-y", `${rx(stepY)}px`);
       /* Dot centers sit at (offset + dot-size); subtract dot-size so the grid centers on the card. */
-      appEl.style.setProperty("--dot-offset-x", `${stepX / 2 - dotSize}px`);
-      appEl.style.setProperty("--dot-offset-y", `${stepY / 2 - dotSize}px`);
+      appEl.style.setProperty("--dot-offset-x", `${rx(stepX / 2 - dotSize)}px`);
+      appEl.style.setProperty("--dot-offset-y", `${rx(stepY / 2 - dotSize)}px`);
+    }
+
+    function scheduleRecalcDotGridSteps() {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          recalcDotGridSteps();
+        });
+      });
     }
 
     function getInputValue(input, fallback) {
@@ -889,14 +913,27 @@
       }
     }
 
-    window.addEventListener("pageshow", (event) => {
-      if (event.persisted) {
-        recalcDotGridSteps();
+    window.addEventListener("pageshow", () => {
+      scheduleRecalcDotGridSteps();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        scheduleRecalcDotGridSteps();
       }
     });
 
-    window.addEventListener("resize", recalcDotGridSteps, { passive: true });
-    window.addEventListener("orientationchange", recalcDotGridSteps, { passive: true });
+    window.addEventListener("resize", scheduleRecalcDotGridSteps, { passive: true });
+    window.addEventListener("orientationchange", scheduleRecalcDotGridSteps, { passive: true });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", scheduleRecalcDotGridSteps, { passive: true });
+    }
+
+    if (typeof ResizeObserver !== "undefined" && appEl) {
+      const dotGridResizeObserver = new ResizeObserver(() => scheduleRecalcDotGridSteps());
+      dotGridResizeObserver.observe(appEl);
+    }
 
     startBtn.addEventListener("click", toggleStartPause);
     resetBtn.addEventListener("click", resetTimer);
@@ -910,7 +947,7 @@
     restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
     const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
-    recalcDotGridSteps();
+    scheduleRecalcDotGridSteps();
     applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
     updateUI();
     updateStartButton();
