@@ -22,8 +22,6 @@
       --workout-ui: #d4d4d4;
       --workout-stepper-bg: rgba(255, 255, 255, 0.12);
       --workout-stepper-active: rgba(255, 255, 255, 0.2);
-      --workout-disabled: rgba(255, 255, 255, 0.35);
-      --workout-shadow: rgba(0, 0, 0, 0.45);
     }
 
     html {
@@ -87,7 +85,6 @@
       display: grid;
       gap: 18px;
       justify-items: center;
-      backdrop-filter: none;
       border-radius: var(--app-radius);
       padding: 20px 20px 24px;
       /* Keep card fill immediate so dot halo never flashes through on phase switches. */
@@ -641,11 +638,6 @@
       root.style.setProperty("--workout-ui", blendHex("#0f172a", canonical, 0.32));
       root.style.setProperty("--workout-stepper-bg", `rgba(${r},${g},${b},0.2)`);
       root.style.setProperty("--workout-stepper-active", `rgba(${r},${g},${b},0.34)`);
-      root.style.setProperty("--workout-disabled", `rgba(${r},${g},${b},0.48)`);
-      root.style.setProperty(
-        "--workout-shadow",
-        `rgba(${Math.round(r * 0.45)},${Math.round(g * 0.45)},${Math.round(b * 0.45)},0.38)`
-      );
       syncBrowserChrome();
     }
 
@@ -661,23 +653,20 @@
     function recalcDotGridSteps() {
       if (!appEl) return;
       const cs = getComputedStyle(appEl);
-      const baseBand = Number.parseFloat(cs.getPropertyValue("--dot-band")) || 80;
+      const band = Number.parseFloat(cs.getPropertyValue("--dot-band")) || 80;
       const dotSize = Number.parseFloat(cs.getPropertyValue("--dot-size")) || 4;
       const rect = appEl.getBoundingClientRect();
-      const band = baseBand;
-      appEl.style.setProperty("--dot-band", `${band}px`);
-      const totalW = rect.width + (2 * band);
-      const totalH = rect.height + (2 * band);
-      /* Fixed visible grid counts around card. */
+      const totalW = rect.width + 2 * band;
+      const totalH = rect.height + 2 * band;
       const cols = 15;
       const rows = 18;
       const stepX = totalW / cols;
       const stepY = totalH / rows;
       appEl.style.setProperty("--dot-step-x", `${stepX}px`);
       appEl.style.setProperty("--dot-step-y", `${stepY}px`);
-      /* Dot center is at offset + dot-size, so subtract dot-size to center grid precisely. */
-      appEl.style.setProperty("--dot-offset-x", `${(stepX / 2) - dotSize}px`);
-      appEl.style.setProperty("--dot-offset-y", `${(stepY / 2) - dotSize}px`);
+      /* Dot centers sit at (offset + dot-size); subtract dot-size so the grid centers on the card. */
+      appEl.style.setProperty("--dot-offset-x", `${stepX / 2 - dotSize}px`);
+      appEl.style.setProperty("--dot-offset-y", `${stepY / 2 - dotSize}px`);
     }
 
     function getInputValue(input, fallback) {
@@ -691,6 +680,8 @@
     let running = false;
     let rafId = null;
     let endTimeMs = 0;
+    /** Maps wall time (performance.now) to AudioContext time: audioAt(t) = audio0 + (t - perf0) / 1000. */
+    let audioWallAnchor = null;
     let webAudioCtx = null;
     let webAudioResumePromise = null;
     const webAudioBufferCache = new Map();
@@ -830,6 +821,25 @@
       }
     }
 
+    function syncAudioWallAnchor() {
+      const ctx = ensureWebAudioContext();
+      if (!ctx || ctx.state !== "running") return;
+      const now = performance.now();
+      audioWallAnchor = { perf0: now, audio0: ctx.currentTime };
+    }
+
+    function resumeWebAudioAndPrime() {
+      return resumeWebAudioContext().then(() => {
+        const ctx = ensureWebAudioContext();
+        if (ctx?.state === "running") {
+          primeWebAudioOutput(ctx);
+          if (running) {
+            syncAudioWallAnchor();
+          }
+        }
+      });
+    }
+
     function ensureBeepBuffer(duration, frequency, gain, fadeOut) {
       const ctx = ensureWebAudioContext();
       if (!ctx) return null;
@@ -850,32 +860,47 @@
       ensureBeepBuffer(0.7, 990, 0.16, false);  // 0/end
     }
 
-    function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true, idealWallMs) {
-      const ctx = ensureWebAudioContext();
+    function audioTimeForWallMs(ac, idealWallMs) {
+      if (audioWallAnchor) {
+        return audioWallAnchor.audio0 + (idealWallMs - audioWallAnchor.perf0) / 1000;
+      }
+      return ac.currentTime + (idealWallMs - performance.now()) / 1000;
+    }
+
+    function beep(duration, frequency, gain, fadeOut, idealWallMs) {
       const buffer = ensureBeepBuffer(duration, frequency, gain, fadeOut);
-      if (!ctx || !buffer) return;
-      void (async () => {
-        await resumeWebAudioContext();
-        const ac = ensureWebAudioContext();
+      if (!buffer) return;
+
+      function playWhenReady(ac) {
         if (!ac || ac.state !== "running") return;
         const src = ac.createBufferSource();
         src.buffer = buffer;
         src.connect(ac.destination);
-        const scheduled =
-          idealWallMs !== undefined && Number.isFinite(idealWallMs) ? Number(idealWallMs) : null;
-        const deltaSec =
-          scheduled == null ? 1 / ac.sampleRate : (scheduled - performance.now()) / 1000;
-        const when = ac.currentTime + Math.max(1 / ac.sampleRate, deltaSec);
+        const minT = ac.currentTime + 1 / ac.sampleRate;
+        const when = Math.max(minT, audioTimeForWallMs(ac, idealWallMs));
         try {
           src.start(when);
         } catch {
           try {
-            src.start(ac.currentTime + 1 / ac.sampleRate);
+            src.start(minT);
           } catch {
             /* ignore */
           }
         }
-      })();
+      }
+
+      const ac = ensureWebAudioContext();
+      if (ac?.state === "running") {
+        playWhenReady(ac);
+        return;
+      }
+      void resumeWebAudioContext().then(() => {
+        const next = ensureWebAudioContext();
+        if (running) {
+          syncAudioWallAnchor();
+        }
+        playWhenReady(next);
+      });
     }
 
     function setPhase(nextPhase) {
@@ -896,7 +921,12 @@
       }
       setPhase(next);
       if (running) {
-        endTimeMs = performance.now() + remaining * 1000;
+        const now = performance.now();
+        endTimeMs = now + remaining * 1000;
+        const ctx = ensureWebAudioContext();
+        if (ctx?.state === "running") {
+          audioWallAnchor = { perf0: now, audio0: ctx.currentTime };
+        }
       }
     }
 
@@ -946,13 +976,26 @@
       rafId = requestAnimationFrame(tick);
     }
 
-    function startTimer() {
+    async function startTimer() {
       if (running) return;
-      /* Do not await: ctx.resume() can stall; timer must start on the same tap. */
-      void resumeWebAudioContext();
+      let ctx = ensureWebAudioContext();
+      if (ctx && ctx.state !== "running") {
+        try {
+          await ctx.resume();
+        } catch {
+          /* ignore */
+        }
+      }
+      ctx = ensureWebAudioContext();
+      const now = performance.now();
       hasStarted = true;
       running = true;
-      endTimeMs = performance.now() + remaining * 1000;
+      endTimeMs = now + remaining * 1000;
+      if (ctx && ctx.state === "running") {
+        audioWallAnchor = { perf0: now, audio0: ctx.currentTime };
+      } else {
+        audioWallAnchor = null;
+      }
       void acquireWakeLock();
       updateStartButton();
       updateDurationControlsLock();
@@ -989,13 +1032,7 @@
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && running) {
         void acquireWakeLock();
-        void (async () => {
-          await resumeWebAudioContext();
-          const ctx = ensureWebAudioContext();
-          if (ctx && ctx.state === "running") {
-            primeWebAudioOutput(ctx);
-          }
-        })();
+        void resumeWebAudioAndPrime();
       }
     });
 
@@ -1003,25 +1040,16 @@
       "focus",
       () => {
         if (!running) return;
-        void resumeWebAudioContext().then(() => {
-          const ctx = ensureWebAudioContext();
-          if (ctx && ctx.state === "running") {
-            primeWebAudioOutput(ctx);
-          }
-        });
+        void resumeWebAudioAndPrime();
       },
       { passive: true }
     );
 
-    window.addEventListener("pageshow", () => {
-      initializeBeepAudio();
-      void resumeWebAudioContext().then(() => {
-        const ctx = ensureWebAudioContext();
-        if (ctx && ctx.state === "running") {
-          primeWebAudioOutput(ctx);
-        }
-      });
-      recalcDotGridSteps();
+    window.addEventListener("pageshow", (event) => {
+      void resumeWebAudioAndPrime();
+      if (event.persisted) {
+        recalcDotGridSteps();
+      }
     });
 
     window.addEventListener("resize", recalcDotGridSteps, { passive: true });
