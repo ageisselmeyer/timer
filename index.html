@@ -75,6 +75,9 @@
 
     .app {
       --app-radius: 18px;
+      --dot-band: 64px;
+      --dot-step-x: 40px;
+      --dot-step-y: 36px;
       position: relative;
       width: min(440px, 100%);
       display: grid;
@@ -95,16 +98,27 @@
     body.phase-workout .app::before {
       content: "";
       position: absolute;
-      inset: -64px;
-      z-index: -1;
-      border-radius: calc(var(--app-radius) + 64px);
+      inset: calc(-1 * var(--dot-band));
+      z-index: -2;
+      border-radius: calc(var(--app-radius) + var(--dot-band));
       pointer-events: none;
       background:
-        radial-gradient(circle, rgb(var(--workout-accent-rgb) / 0.9) 2px, transparent 3px) center / 40px 32px;
-      /* Fade the dot grid outward so it looks like a dissipating halo. */
-      -webkit-mask: radial-gradient(circle, black 18%, rgba(0, 0, 0, 0.62) 56%, transparent 100%);
-      mask: radial-gradient(circle, black 18%, rgba(0, 0, 0, 0.62) 56%, transparent 100%);
+        radial-gradient(circle, rgb(var(--workout-accent-rgb) / 0.78) 1.8px, transparent 2.8px)
+        center top / var(--dot-step-x) var(--dot-step-y);
+      /* Soft fade so dots dissipate toward outer area. */
+      -webkit-mask: radial-gradient(circle at center, rgba(0, 0, 0, 0.96) 36%, rgba(0, 0, 0, 0.66) 74%, transparent 100%);
+      mask: radial-gradient(circle at center, rgba(0, 0, 0, 0.96) 36%, rgba(0, 0, 0, 0.66) 74%, transparent 100%);
       opacity: 0.95;
+    }
+
+    body.phase-workout .app::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: var(--app-radius);
+      pointer-events: none;
+      background: var(--kettlebell-black);
     }
 
     body.phase-rest .app {
