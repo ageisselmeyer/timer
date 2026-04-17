@@ -620,8 +620,8 @@
     let running = false;
     let rafId = null;
     let endTimeMs = 0;
-    let audioCtx = null;
-    const beepBufferCache = new Map();
+    const BEEP_SAMPLE_RATE = 48000;
+    const beepWavUrlCache = new Map();
     let beepedSecond = null;
     let wakeLock = null;
     let hasStarted = false;
@@ -689,50 +689,131 @@
       applyDurationInputChange(input);
     }
 
-    function ensureAudioContext() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    /** iOS: Web Audio is often muted with the ring/silent switch; HTMLAudio + playback session uses the media path. */
+    function ensurePlaybackAudioSession() {
+      try {
+        if (navigator.audioSession && "type" in navigator.audioSession) {
+          navigator.audioSession.type = "playback";
+        }
+      } catch {
+        /* ignore */
       }
-      return audioCtx;
+    }
+
+    function floatToWavBlob(float32, sampleRate) {
+      const n = float32.length;
+      const int16 = new Int16Array(n);
+      for (let i = 0; i < n; i += 1) {
+        const s = Math.max(-1, Math.min(1, float32[i]));
+        int16[i] = s < 0 ? Math.round(s * 0x8000) : Math.round(s * 0x7fff);
+      }
+      const buf = new ArrayBuffer(44 + n * 2);
+      const v = new DataView(buf);
+      const wstr = (o, s) => {
+        for (let i = 0; i < s.length; i += 1) v.setUint8(o + i, s.charCodeAt(i));
+      };
+      wstr(0, "RIFF");
+      v.setUint32(4, 36 + n * 2, true);
+      wstr(8, "WAVE");
+      wstr(12, "fmt ");
+      v.setUint32(16, 16, true);
+      v.setUint16(20, 1, true);
+      v.setUint16(22, 1, true);
+      v.setUint32(24, sampleRate, true);
+      v.setUint32(28, sampleRate * 2, true);
+      v.setUint16(32, 2, true);
+      v.setUint16(34, 16, true);
+      wstr(36, "data");
+      v.setUint32(40, n * 2, true);
+      let off = 44;
+      for (let i = 0; i < n; i += 1) {
+        v.setInt16(off, int16[i], true);
+        off += 2;
+      }
+      return new Blob([buf], { type: "audio/wav" });
+    }
+
+    function synthesizeBeepSamples(duration, sampleRate, frequency, gain, fadeOut) {
+      const attack = 0.008;
+      const release = fadeOut ? 0.08 : 0.016;
+      const sampleCount = Math.max(1, Math.floor(duration * sampleRate));
+      const data = new Float32Array(sampleCount);
+      const attackSamples = Math.max(1, Math.floor(attack * sampleRate));
+      const releaseSamples = Math.max(1, Math.floor(release * sampleRate));
+      const sustainEnd = Math.max(0, sampleCount - releaseSamples);
+      const twoPiF = 2 * Math.PI * frequency;
+      for (let i = 0; i < sampleCount; i += 1) {
+        let env = 1;
+        if (i < attackSamples) {
+          env = i / attackSamples;
+        } else if (i >= sustainEnd) {
+          env = (sampleCount - 1 - i) / releaseSamples;
+        }
+        env = Math.max(0, Math.min(1, env));
+        data[i] = Math.sin((twoPiF * i) / sampleRate) * gain * env;
+      }
+      data[0] = 0;
+      data[sampleCount - 1] = 0;
+      return data;
     }
 
     function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true) {
-      const ctx = ensureAudioContext();
-      const sr = ctx.sampleRate;
+      ensurePlaybackAudioSession();
+      const sr = BEEP_SAMPLE_RATE;
       const attack = 0.008;
       const release = fadeOut ? 0.08 : 0.016;
-      const key = [duration, frequency, gain, attack, release, fadeOut].join("|");
-      let buffer = beepBufferCache.get(key);
-
-      if (!buffer) {
-        const sampleCount = Math.max(1, Math.floor(duration * sr));
-        buffer = ctx.createBuffer(1, sampleCount, sr);
-        const data = buffer.getChannelData(0);
-        const attackSamples = Math.max(1, Math.floor(attack * sr));
-        const releaseSamples = Math.max(1, Math.floor(release * sr));
-        const sustainEnd = Math.max(0, sampleCount - releaseSamples);
-        const twoPiF = 2 * Math.PI * frequency;
-
-        for (let i = 0; i < sampleCount; i += 1) {
-          let env = 1;
-          if (i < attackSamples) {
-            env = i / attackSamples;
-          } else if (i >= sustainEnd) {
-            env = (sampleCount - 1 - i) / releaseSamples;
-          }
-          env = Math.max(0, Math.min(1, env));
-          const t = i / sr;
-          data[i] = Math.sin(twoPiF * t) * gain * env;
-        }
-        data[0] = 0;
-        data[sampleCount - 1] = 0;
-        beepBufferCache.set(key, buffer);
+      const key = [duration, frequency, gain, attack, release, fadeOut, sr].join("|");
+      let url = beepWavUrlCache.get(key);
+      if (!url) {
+        const samples = synthesizeBeepSamples(duration, sr, frequency, gain, fadeOut);
+        url = URL.createObjectURL(floatToWavBlob(samples, sr));
+        beepWavUrlCache.set(key, url);
       }
+      const el = new Audio(url);
+      el.volume = 1;
+      void el.play().catch(() => {
+        beepUnlockDone = false;
+        needsBeepUnlock = true;
+      });
+    }
 
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.connect(ctx.destination);
-      src.start(ctx.currentTime + 0.003);
+    let beepUnlockDone = false;
+    let needsBeepUnlock = false;
+    let hiddenAtMs = 0;
+    async function unlockBeepAudio() {
+      ensurePlaybackAudioSession();
+      if (beepUnlockDone) return;
+      const blob = floatToWavBlob(new Float32Array(64), BEEP_SAMPLE_RATE);
+      const url = URL.createObjectURL(blob);
+      const el = new Audio(url);
+      el.volume = 0.001;
+      try {
+        await el.play();
+        beepUnlockDone = true;
+        needsBeepUnlock = false;
+      } catch {
+        needsBeepUnlock = true;
+      }
+      URL.revokeObjectURL(url);
+    }
+
+    function markBeepNeedsUnlock() {
+      beepUnlockDone = false;
+      needsBeepUnlock = true;
+    }
+
+    function installAudioRearmHooks() {
+      const rearm = () => {
+        if (!needsBeepUnlock) return;
+        void unlockBeepAudio();
+      };
+      document.addEventListener("pointerdown", rearm, { passive: true });
+      document.addEventListener("keydown", rearm, { passive: true });
+      window.addEventListener("focus", rearm, { passive: true });
+      window.addEventListener("pageshow", () => {
+        ensurePlaybackAudioSession();
+        markBeepNeedsUnlock();
+      });
     }
 
     function setPhase(nextPhase) {
@@ -795,9 +876,9 @@
       rafId = requestAnimationFrame(tick);
     }
 
-    function startTimer() {
+    async function startTimer() {
       if (running) return;
-      ensureAudioContext().resume();
+      await unlockBeepAudio();
       hasStarted = true;
       running = true;
       endTimeMs = performance.now() + remaining * 1000;
@@ -830,13 +911,24 @@
       if (running) {
         pauseTimer();
       } else {
-        startTimer();
+        void startTimer();
       }
     }
 
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && running) {
-        void acquireWakeLock();
+      if (document.visibilityState === "hidden") {
+        hiddenAtMs = Date.now();
+        return;
+      }
+      if (document.visibilityState === "visible") {
+        const hiddenForMs = hiddenAtMs ? Date.now() - hiddenAtMs : 0;
+        if (hiddenForMs > 3 * 60 * 1000) {
+          markBeepNeedsUnlock();
+        }
+        if (running) {
+          void acquireWakeLock();
+          ensurePlaybackAudioSession();
+        }
       }
     });
 
@@ -852,6 +944,7 @@
     pausePlus.addEventListener("click", () => stepDuration(pauseInput, 5));
 
     const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
+    installAudioRearmHooks();
     applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
     updateUI();
     updatePlayButton();
