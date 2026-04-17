@@ -75,9 +75,9 @@
 
     .app {
       --app-radius: 18px;
-      --dot-band: 64px;
+      --dot-band: 80px;
       --dot-step-x: 40px;
-      --dot-step-y: 36px;
+      --dot-step-y: 40px;
       position: relative;
       width: min(440px, 100%);
       display: grid;
@@ -105,7 +105,7 @@
       pointer-events: none;
       background:
         radial-gradient(circle, rgb(var(--workout-accent-rgb) / 0.78) 1.8px, transparent 2.8px)
-        center center / var(--dot-step-x) var(--dot-step-y);
+        left top / var(--dot-step-x) var(--dot-step-y);
       /* Fixed-thickness ring = consistent spacing around card on all screens. */
       -webkit-mask:
         linear-gradient(#000 0 0) content-box,
