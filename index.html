@@ -13,7 +13,7 @@
       /* Page + card surface; band color is only for timer ring + glow. */
       --kettlebell-black: #211f1e;
       --browser-ui-kettlebell: var(--kettlebell-black);
-      --pause-bg: #a8b0bd;
+      --rest-bg: #a8b0bd;
       --workout-accent: #000000;
       --workout-accent-rgb: 0 0 0;
       --workout-inner: #1a1a1a;
@@ -68,8 +68,8 @@
       color: var(--workout-body-text);
     }
 
-    body.phase-pause {
-      background: var(--pause-bg);
+    body.phase-rest {
+      background: var(--rest-bg);
       color: #1e293b;
     }
 
@@ -92,7 +92,7 @@
       animation: workout-card-glow-pulse 3.2s ease-in-out infinite;
     }
 
-    body.phase-pause .app {
+    body.phase-rest .app {
       background: rgba(255, 255, 255, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.7);
       box-shadow: 0 14px 40px rgba(30, 41, 59, 0.14);
@@ -311,7 +311,7 @@
       --tick: rgba(255, 255, 255, 0.96);
     }
 
-    .pause {
+    .rest {
       --fill-color: #8b939e;
       --track-color: rgba(255, 255, 255, 0.52);
       --inner-color: #c4c9d4;
@@ -322,7 +322,7 @@
       color: var(--workout-text-strong);
     }
 
-    .pause .center {
+    .rest .center {
       color: #1e293b;
     }
 
@@ -330,7 +330,7 @@
       color: var(--workout-ui);
     }
 
-    body.phase-pause .meta {
+    body.phase-rest .meta {
       color: #475569;
     }
 
@@ -338,7 +338,7 @@
       color: var(--workout-ui);
     }
 
-    body.phase-pause .durations > label {
+    body.phase-rest .durations > label {
       color: #64748b;
     }
 
@@ -356,17 +356,17 @@
       background: var(--workout-stepper-active);
     }
 
-    body.phase-pause .field-stepper {
+    body.phase-rest .field-stepper {
       border-color: rgba(255, 255, 255, 0.75);
       background: rgba(255, 255, 255, 0.82);
     }
 
-    body.phase-pause .stepper-btn {
+    body.phase-rest .stepper-btn {
       background: rgba(71, 85, 105, 0.12);
       color: #ffffff;
     }
 
-    body.phase-pause .stepper-btn:active {
+    body.phase-rest .stepper-btn:active {
       background: rgba(71, 85, 105, 0.2);
     }
 
@@ -374,15 +374,15 @@
     body.phase-workout:not(.has-started) .durations > label:first-child input[type="number"],
     body.phase-workout:not(.has-started) .durations > label:nth-child(2) input[type="number"],
     body.phase-workout:not(.has-started) #workoutInput,
-    body.phase-workout:not(.has-started) #pauseInput {
+    body.phase-workout:not(.has-started) #restInput {
       color: var(--workout-accent);
       -webkit-text-fill-color: var(--workout-accent);
     }
 
-    body.phase-pause:not(.has-started) .durations > label:first-child input[type="number"],
-    body.phase-pause:not(.has-started) .durations > label:nth-child(2) input[type="number"],
-    body.phase-pause:not(.has-started) #workoutInput,
-    body.phase-pause:not(.has-started) #pauseInput {
+    body.phase-rest:not(.has-started) .durations > label:first-child input[type="number"],
+    body.phase-rest:not(.has-started) .durations > label:nth-child(2) input[type="number"],
+    body.phase-rest:not(.has-started) #workoutInput,
+    body.phase-rest:not(.has-started) #restInput {
       color: #475569;
       -webkit-text-fill-color: #475569;
     }
@@ -390,15 +390,15 @@
     body.phase-workout.has-started .durations > label:first-child input[type="number"]:disabled,
     body.phase-workout.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
     body.phase-workout.has-started #workoutInput:disabled,
-    body.phase-workout.has-started #pauseInput:disabled {
+    body.phase-workout.has-started #restInput:disabled {
       color: var(--workout-text-strong);
       -webkit-text-fill-color: var(--workout-text-strong);
     }
 
-    body.phase-pause.has-started .durations > label:first-child input[type="number"]:disabled,
-    body.phase-pause.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
-    body.phase-pause.has-started #workoutInput:disabled,
-    body.phase-pause.has-started #pauseInput:disabled {
+    body.phase-rest.has-started .durations > label:first-child input[type="number"]:disabled,
+    body.phase-rest.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
+    body.phase-rest.has-started #workoutInput:disabled,
+    body.phase-rest.has-started #restInput:disabled {
       color: #1e293b;
       -webkit-text-fill-color: #1e293b;
     }
@@ -416,12 +416,12 @@
       background: #ffffff;
     }
 
-    body.phase-pause .buttons button {
+    body.phase-rest .buttons button {
       background: rgba(255, 255, 255, 0.92);
       color: #475569;
     }
 
-    body.phase-pause .buttons button:hover {
+    body.phase-rest .buttons button:hover {
       background: #ffffff;
     }
 
@@ -470,16 +470,16 @@
           </div>
         </label>
         <label>
-          Pause (sec)
+          Rest (sec)
           <div class="field-stepper">
-            <button type="button" class="stepper-btn" id="pauseMinus" aria-label="Decrease pause by 5 seconds">−</button>
-            <input id="pauseInput" type="number" min="5" value="20" inputmode="numeric" />
-            <button type="button" class="stepper-btn" id="pausePlus" aria-label="Increase pause by 5 seconds">+</button>
+            <button type="button" class="stepper-btn" id="restMinus" aria-label="Decrease rest by 5 seconds">−</button>
+            <input id="restInput" type="number" min="5" value="20" inputmode="numeric" />
+            <button type="button" class="stepper-btn" id="restPlus" aria-label="Increase rest by 5 seconds">+</button>
           </div>
         </label>
       </div>
       <div class="buttons">
-        <button id="playBtn" type="button">Start</button>
+        <button id="startBtn" type="button">Start</button>
         <button id="resetBtn" type="button">Reset</button>
       </div>
     </section>
@@ -491,16 +491,16 @@
     const secondsEl = document.getElementById("seconds");
     const phaseLabelEl = document.getElementById("phaseLabel");
     const workoutInput = document.getElementById("workoutInput");
-    const pauseInput = document.getElementById("pauseInput");
-    const playBtn = document.getElementById("playBtn");
+    const restInput = document.getElementById("restInput");
+    const startBtn = document.getElementById("startBtn");
     const resetBtn = document.getElementById("resetBtn");
     const workoutMinus = document.getElementById("workoutMinus");
     const workoutPlus = document.getElementById("workoutPlus");
-    const pauseMinus = document.getElementById("pauseMinus");
-    const pausePlus = document.getElementById("pausePlus");
+    const restMinus = document.getElementById("restMinus");
+    const restPlus = document.getElementById("restPlus");
 
     const PHASE_WORKOUT = "workout";
-    const PHASE_PAUSE = "pause";
+    const PHASE_REST = "rest";
     const MIN_DURATION_SEC = 5;
     /** Black until first paint after load; then one random palette entry (refresh only). */
     const WORKOUT_BOOT_PLACEHOLDER_HEX = "#000000";
@@ -626,25 +626,25 @@
     let wakeLock = null;
     let hasStarted = false;
 
-    function updatePlayButton() {
+    function updateStartButton() {
       document.body.classList.toggle("has-started", hasStarted);
       if (!hasStarted) {
-        playBtn.textContent = "Start";
+        startBtn.textContent = "Start";
       } else if (running) {
-        playBtn.textContent = "Pause";
+        startBtn.textContent = "Pause";
       } else {
-        playBtn.textContent = "Resume";
+        startBtn.textContent = "Resume";
       }
     }
 
     function updateDurationControlsLock() {
       const locked = hasStarted;
       workoutInput.disabled = locked;
-      pauseInput.disabled = locked;
+      restInput.disabled = locked;
       workoutMinus.disabled = locked;
       workoutPlus.disabled = locked;
-      pauseMinus.disabled = locked;
-      pausePlus.disabled = locked;
+      restMinus.disabled = locked;
+      restPlus.disabled = locked;
     }
 
     async function acquireWakeLock() {
@@ -675,8 +675,8 @@
       if (input === workoutInput && phase === PHASE_WORKOUT && !running) {
         setPhase(PHASE_WORKOUT);
       }
-      if (input === pauseInput && phase === PHASE_PAUSE && !running) {
-        setPhase(PHASE_PAUSE);
+      if (input === restInput && phase === PHASE_REST && !running) {
+        setPhase(PHASE_REST);
       }
     }
 
@@ -820,14 +820,14 @@
       phase = nextPhase;
       phaseDuration = phase === PHASE_WORKOUT
         ? getInputValue(workoutInput, 40)
-        : getInputValue(pauseInput, 20);
+        : getInputValue(restInput, 20);
       remaining = phaseDuration;
       beepedSecond = null;
       updateUI();
     }
 
     function switchPhase() {
-      const next = phase === PHASE_WORKOUT ? PHASE_PAUSE : PHASE_WORKOUT;
+      const next = phase === PHASE_WORKOUT ? PHASE_REST : PHASE_WORKOUT;
       setPhase(next);
       if (running) {
         endTimeMs = performance.now() + remaining * 1000;
@@ -836,12 +836,12 @@
 
     function updateUI() {
       timerEl.classList.toggle("workout", phase === PHASE_WORKOUT);
-      timerEl.classList.toggle("pause", phase === PHASE_PAUSE);
+      timerEl.classList.toggle("rest", phase === PHASE_REST);
       document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
-      document.body.classList.toggle("phase-pause", phase === PHASE_PAUSE);
+      document.body.classList.toggle("phase-rest", phase === PHASE_REST);
       const shown = Math.max(0, Math.ceil(remaining));
       secondsEl.textContent = String(shown);
-      phaseLabelEl.textContent = phase === PHASE_WORKOUT ? "Workout" : "Pause";
+      phaseLabelEl.textContent = phase === PHASE_WORKOUT ? "Workout" : "Rest";
       const doneRatio = 1 - (remaining / phaseDuration);
       ringEl.style.setProperty("--progress", String(Math.max(0, Math.min(1, doneRatio))));
     }
@@ -883,7 +883,7 @@
       running = true;
       endTimeMs = performance.now() + remaining * 1000;
       void acquireWakeLock();
-      updatePlayButton();
+      updateStartButton();
       updateDurationControlsLock();
       rafId = requestAnimationFrame(tick);
     }
@@ -896,18 +896,18 @@
         cancelAnimationFrame(rafId);
         rafId = null;
       }
-      updatePlayButton();
+      updateStartButton();
     }
 
     function resetTimer() {
       pauseTimer();
       hasStarted = false;
       setPhase(PHASE_WORKOUT);
-      updatePlayButton();
+      updateStartButton();
       updateDurationControlsLock();
     }
 
-    function togglePlayPause() {
+    function toggleStartPause() {
       if (running) {
         pauseTimer();
       } else {
@@ -932,22 +932,22 @@
       }
     });
 
-    playBtn.addEventListener("click", togglePlayPause);
+    startBtn.addEventListener("click", toggleStartPause);
     resetBtn.addEventListener("click", resetTimer);
 
     workoutInput.addEventListener("change", () => applyDurationInputChange(workoutInput));
-    pauseInput.addEventListener("change", () => applyDurationInputChange(pauseInput));
+    restInput.addEventListener("change", () => applyDurationInputChange(restInput));
 
     workoutMinus.addEventListener("click", () => stepDuration(workoutInput, -5));
     workoutPlus.addEventListener("click", () => stepDuration(workoutInput, 5));
-    pauseMinus.addEventListener("click", () => stepDuration(pauseInput, -5));
-    pausePlus.addEventListener("click", () => stepDuration(pauseInput, 5));
+    restMinus.addEventListener("click", () => stepDuration(restInput, -5));
+    restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
     const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
     installAudioRearmHooks();
     applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
     updateUI();
-    updatePlayButton();
+    updateStartButton();
     updateDurationControlsLock();
     scheduleWorkoutThemeReveal(() => {
       applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx]);
