@@ -90,7 +90,8 @@
       backdrop-filter: none;
       border-radius: var(--app-radius);
       padding: 20px 20px 24px;
-      transition: background 0.45s ease, border-color 0.35s ease;
+      /* Keep card fill immediate so dot halo never flashes through on phase switches. */
+      transition: border-color 0.35s ease;
     }
 
     body.phase-workout .app {
