@@ -76,8 +76,12 @@
     .app {
       --app-radius: 18px;
       --dot-band: 80px;
-      --dot-step-x: 40px;
-      --dot-step-y: 40px;
+      --dot-size: 4px;
+      --dot-size-far: 2.6px;
+      --dot-step-x: 50px;
+      --dot-step-y: 50px;
+      --dot-offset-x: 25px;
+      --dot-offset-y: 25px;
       position: relative;
       width: min(440px, 100%);
       display: grid;
@@ -99,24 +103,38 @@
       content: "";
       position: absolute;
       inset: calc(-1 * var(--dot-band));
-      padding: var(--dot-band);
       z-index: -2;
       border-radius: calc(var(--app-radius) + var(--dot-band));
       pointer-events: none;
       background:
-        radial-gradient(circle, rgb(var(--workout-accent-rgb) / 0.78) 1.8px, transparent 2.8px)
-        left top / var(--dot-step-x) var(--dot-step-y);
-      /* Fixed-thickness ring = consistent spacing around card on all screens. */
-      -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-      mask-composite: exclude;
+        radial-gradient(
+          circle at var(--dot-size) var(--dot-size),
+          rgb(var(--workout-accent-rgb) / 0.78) calc(var(--dot-size) - 1px),
+          transparent var(--dot-size)
+        )
+        var(--dot-offset-x) var(--dot-offset-y) / var(--dot-step-x) var(--dot-step-y),
+        radial-gradient(
+          circle at var(--dot-size-far) var(--dot-size-far),
+          rgb(var(--workout-accent-rgb) / 0.44) calc(var(--dot-size-far) - 0.8px),
+          transparent var(--dot-size-far)
+        )
+        var(--dot-offset-x) var(--dot-offset-y) / var(--dot-step-x) var(--dot-step-y);
+      /* Fade outward so dots get dimmer and visually finer near edges. */
+      -webkit-mask: radial-gradient(
+        circle at center,
+        rgba(0, 0, 0, 1) 34%,
+        rgba(0, 0, 0, 0.78) 62%,
+        rgba(0, 0, 0, 0.38) 84%,
+        transparent 100%
+      );
+      mask: radial-gradient(
+        circle at center,
+        rgba(0, 0, 0, 1) 34%,
+        rgba(0, 0, 0, 0.78) 62%,
+        rgba(0, 0, 0, 0.38) 84%,
+        transparent 100%
+      );
       opacity: 0.9;
-      filter: blur(0.45px);
     }
 
     body.phase-rest .app {
@@ -493,6 +511,7 @@
   </main>
 
   <script>
+    const appEl = document.querySelector(".app");
     const timerEl = document.getElementById("timer");
     const ringEl = document.getElementById("ring");
     const secondsEl = document.getElementById("seconds");
@@ -628,6 +647,32 @@
           updateUI();
         });
       });
+    }
+
+    function recalcDotGridSteps() {
+      if (!appEl) return;
+      const cs = getComputedStyle(appEl);
+      const baseBand = Number.parseFloat(cs.getPropertyValue("--dot-band")) || 80;
+      const dotSize = Number.parseFloat(cs.getPropertyValue("--dot-size")) || 4;
+      const rect = appEl.getBoundingClientRect();
+      const safeBand = Math.max(
+        0,
+        Math.min(rect.left, window.innerWidth - rect.right, rect.top, window.innerHeight - rect.bottom) - 2
+      );
+      const band = Math.min(baseBand, safeBand);
+      appEl.style.setProperty("--dot-band", `${band}px`);
+      const totalW = rect.width + (2 * band);
+      const totalH = rect.height + (2 * band);
+      /* Fixed visible grid counts around card. */
+      const cols = 15;
+      const rows = 18;
+      const stepX = totalW / cols;
+      const stepY = totalH / rows;
+      appEl.style.setProperty("--dot-step-x", `${stepX}px`);
+      appEl.style.setProperty("--dot-step-y", `${stepY}px`);
+      /* Dot center is at offset + dot-size, so subtract dot-size to center grid precisely. */
+      appEl.style.setProperty("--dot-offset-x", `${(stepX / 2) - dotSize}px`);
+      appEl.style.setProperty("--dot-offset-y", `${(stepY / 2) - dotSize}px`);
     }
 
     function getInputValue(input, fallback) {
@@ -915,7 +960,11 @@
       if (ctx && ctx.state !== "running") {
         void ctx.resume();
       }
+      recalcDotGridSteps();
     });
+
+    window.addEventListener("resize", recalcDotGridSteps, { passive: true });
+    window.addEventListener("orientationchange", recalcDotGridSteps, { passive: true });
 
     startBtn.addEventListener("click", toggleStartPause);
     resetBtn.addEventListener("click", resetTimer);
@@ -930,6 +979,7 @@
 
     const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
     initializeBeepAudio();
+    recalcDotGridSteps();
     applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
     updateUI();
     updateStartButton();
