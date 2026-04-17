@@ -99,26 +99,24 @@
       content: "";
       position: absolute;
       inset: calc(-1 * var(--dot-band));
+      padding: var(--dot-band);
       z-index: -2;
       border-radius: calc(var(--app-radius) + var(--dot-band));
       pointer-events: none;
       background:
         radial-gradient(circle, rgb(var(--workout-accent-rgb) / 0.78) 1.8px, transparent 2.8px)
-        center top / var(--dot-step-x) var(--dot-step-y);
-      /* Soft fade so dots dissipate toward outer area. */
-      -webkit-mask: radial-gradient(circle at center, rgba(0, 0, 0, 0.96) 36%, rgba(0, 0, 0, 0.66) 74%, transparent 100%);
-      mask: radial-gradient(circle at center, rgba(0, 0, 0, 0.96) 36%, rgba(0, 0, 0, 0.66) 74%, transparent 100%);
-      opacity: 0.95;
-    }
-
-    body.phase-workout .app::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      border-radius: var(--app-radius);
-      pointer-events: none;
-      background: var(--kettlebell-black);
+        center center / var(--dot-step-x) var(--dot-step-y);
+      /* Fixed-thickness ring = consistent spacing around card on all screens. */
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      opacity: 0.9;
+      filter: blur(0.45px);
     }
 
     body.phase-rest .app {
