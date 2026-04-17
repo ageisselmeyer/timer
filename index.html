@@ -92,7 +92,8 @@
       width: min(440px, 100%);
       display: grid;
       gap: 18px;
-      justify-items: center;
+      /* stretch rows full width; center .timer explicitly (center + shrink-wrap mis-centers .controls) */
+      justify-items: stretch;
       border-radius: var(--app-radius);
       padding: 20px 20px 24px;
       /* Keep card fill immediate so dot halo never flashes through on phase switches. */
@@ -151,6 +152,8 @@
 
     .timer {
       width: min(340px, 100%);
+      max-width: 100%;
+      justify-self: center;
       aspect-ratio: 1 / 1;
       position: relative;
       display: grid;
@@ -211,6 +214,8 @@
     }
 
     .meta {
+      justify-self: center;
+      width: 100%;
       text-align: center;
       font-size: 13px;
       letter-spacing: 0.12em;
