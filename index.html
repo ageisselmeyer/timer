@@ -621,7 +621,9 @@
     let rafId = null;
     let endTimeMs = 0;
     const BEEP_SAMPLE_RATE = 48000;
+    const BEEP_POOL_SIZE = 4;
     const beepWavUrlCache = new Map();
+    const beepAudioPoolCache = new Map();
     let beepedSecond = null;
     let wakeLock = null;
     let hasStarted = false;
@@ -757,6 +759,28 @@
       return data;
     }
 
+    function getBeepAudio(url) {
+      let pool = beepAudioPoolCache.get(url);
+      if (!pool) {
+        pool = [];
+        for (let i = 0; i < BEEP_POOL_SIZE; i += 1) {
+          const el = new Audio(url);
+          el.preload = "auto";
+          el.load();
+          pool.push(el);
+        }
+        beepAudioPoolCache.set(url, pool);
+      }
+      const idle = pool.find((a) => a.paused || a.ended);
+      const el = idle || pool[0];
+      try {
+        el.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+      return el;
+    }
+
     function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true) {
       ensurePlaybackAudioSession();
       const sr = BEEP_SAMPLE_RATE;
@@ -769,7 +793,7 @@
         url = URL.createObjectURL(floatToWavBlob(samples, sr));
         beepWavUrlCache.set(key, url);
       }
-      const el = new Audio(url);
+      const el = getBeepAudio(url);
       el.volume = 1;
       void el.play().catch(() => {
         beepUnlockDone = false;
@@ -847,7 +871,6 @@
     }
 
     function finishPhase() {
-      beep(0.7, 990, 0.16, false);
       switchPhase();
       if (running) {
         rafId = requestAnimationFrame(tick);
@@ -862,6 +885,11 @@
       if (shown !== beepedSecond) {
         if (shown >= 1 && shown <= 3) {
           beep(0.25, 990, 0.16);
+        } else if (shown === 0) {
+          beep(0.7, 990, 0.16, false);
+          beepedSecond = shown;
+          finishPhase();
+          return;
         }
         beepedSecond = shown;
       }
