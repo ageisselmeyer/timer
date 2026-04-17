@@ -655,11 +655,7 @@
       const baseBand = Number.parseFloat(cs.getPropertyValue("--dot-band")) || 80;
       const dotSize = Number.parseFloat(cs.getPropertyValue("--dot-size")) || 4;
       const rect = appEl.getBoundingClientRect();
-      const safeBand = Math.max(
-        0,
-        Math.min(rect.left, window.innerWidth - rect.right, rect.top, window.innerHeight - rect.bottom) - 2
-      );
-      const band = Math.min(baseBand, safeBand);
+      const band = baseBand;
       appEl.style.setProperty("--dot-band", `${band}px`);
       const totalW = rect.width + (2 * band);
       const totalH = rect.height + (2 * band);
