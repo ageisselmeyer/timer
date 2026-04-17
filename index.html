@@ -523,14 +523,6 @@
     const restMinus = document.getElementById("restMinus");
     const restPlus = document.getElementById("restPlus");
 
-    try {
-      if (typeof navigator !== "undefined" && navigator.audioSession) {
-        navigator.audioSession.type = "playback";
-      }
-    } catch {
-      /* ignore */
-    }
-
     const PHASE_WORKOUT = "workout";
     const PHASE_REST = "rest";
     const MIN_DURATION_SEC = 5;
@@ -680,11 +672,8 @@
     let running = false;
     let rafId = null;
     let endTimeMs = 0;
-    /** Maps wall time (performance.now) to AudioContext time: audioAt(t) = audio0 + (t - perf0) / 1000. */
-    let audioWallAnchor = null;
-    let webAudioCtx = null;
-    let webAudioResumePromise = null;
-    const webAudioBufferCache = new Map();
+    let audioCtx = null;
+    const beepBufferCache = new Map();
     let beepedSecond = null;
     let wakeLock = null;
     let hasStarted = false;
@@ -752,155 +741,49 @@
       applyDurationInputChange(input);
     }
 
-    function synthesizeBeepSamples(duration, sampleRate, frequency, gain, fadeOut) {
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function beep(duration, frequency, gain, fadeOut) {
+      const ctx = ensureAudioContext();
+      const sr = ctx.sampleRate;
       const attack = 0.008;
       const release = fadeOut ? 0.08 : 0.016;
-      const sampleCount = Math.max(1, Math.floor(duration * sampleRate));
-      const data = new Float32Array(sampleCount);
-      const attackSamples = Math.max(1, Math.floor(attack * sampleRate));
-      const releaseSamples = Math.max(1, Math.floor(release * sampleRate));
-      const sustainEnd = Math.max(0, sampleCount - releaseSamples);
-      const twoPiF = 2 * Math.PI * frequency;
-      for (let i = 0; i < sampleCount; i += 1) {
-        let env = 1;
-        if (i < attackSamples) {
-          env = i / attackSamples;
-        } else if (i >= sustainEnd) {
-          env = (sampleCount - 1 - i) / releaseSamples;
-        }
-        env = Math.max(0, Math.min(1, env));
-        data[i] = Math.sin((twoPiF * i) / sampleRate) * gain * env;
-      }
-      data[0] = 0;
-      data[sampleCount - 1] = 0;
-      return data;
-    }
+      const key = [duration, frequency, gain, fadeOut].join("|");
+      let buffer = beepBufferCache.get(key);
 
-    function ensureWebAudioContext() {
-      if (webAudioCtx) return webAudioCtx;
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return null;
-      try {
-        webAudioCtx = new Ctx({ latencyHint: "interactive" });
-      } catch {
-        webAudioCtx = new Ctx();
-      }
-      return webAudioCtx;
-    }
-
-    function resumeWebAudioContext() {
-      const ctx = ensureWebAudioContext();
-      if (!ctx) return Promise.resolve();
-      if (ctx.state === "running") return Promise.resolve();
-      if (!webAudioResumePromise) {
-        const resume = ctx.resume().catch(() => {});
-        /* Some browsers can leave resume() pending; never block UI on it. */
-        const capped = Promise.race([
-          resume,
-          new Promise((resolve) => {
-            setTimeout(resolve, 3000);
-          }),
-        ]);
-        webAudioResumePromise = capped.finally(() => {
-          webAudioResumePromise = null;
-        });
-      }
-      return webAudioResumePromise;
-    }
-
-    function primeWebAudioOutput(ctx) {
-      if (!ctx || ctx.state !== "running") return;
-      try {
-        const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        src.connect(ctx.destination);
-        src.start();
-      } catch {
-        /* ignore */
-      }
-    }
-
-    function syncAudioWallAnchor() {
-      const ctx = ensureWebAudioContext();
-      if (!ctx || ctx.state !== "running") return;
-      const now = performance.now();
-      audioWallAnchor = { perf0: now, audio0: ctx.currentTime };
-    }
-
-    function resumeWebAudioAndPrime() {
-      return resumeWebAudioContext().then(() => {
-        const ctx = ensureWebAudioContext();
-        if (ctx?.state === "running") {
-          primeWebAudioOutput(ctx);
-          if (running) {
-            syncAudioWallAnchor();
-          }
-        }
-      });
-    }
-
-    function ensureBeepBuffer(duration, frequency, gain, fadeOut) {
-      const ctx = ensureWebAudioContext();
-      if (!ctx) return null;
-      const key = [duration, frequency, gain, fadeOut, ctx.sampleRate].join("|");
-      let buffer = webAudioBufferCache.get(key);
       if (!buffer) {
-        const samples = synthesizeBeepSamples(duration, ctx.sampleRate, frequency, gain, fadeOut);
-        buffer = ctx.createBuffer(1, samples.length, ctx.sampleRate);
-        buffer.copyToChannel(samples, 0);
-        webAudioBufferCache.set(key, buffer);
-      }
-      return buffer;
-    }
+        const sampleCount = Math.max(1, Math.floor(duration * sr));
+        buffer = ctx.createBuffer(1, sampleCount, sr);
+        const data = buffer.getChannelData(0);
+        const attackSamples = Math.max(1, Math.floor(attack * sr));
+        const releaseSamples = Math.max(1, Math.floor(release * sr));
+        const sustainEnd = Math.max(0, sampleCount - releaseSamples);
+        const twoPiF = 2 * Math.PI * frequency;
 
-    function initializeBeepAudio() {
-      /* Prebuild the exact countdown/end sounds at page load. */
-      ensureBeepBuffer(0.25, 990, 0.16, true);  // 3/2/1
-      ensureBeepBuffer(0.7, 990, 0.16, false);  // 0/end
-    }
-
-    function audioTimeForWallMs(ac, idealWallMs) {
-      if (audioWallAnchor) {
-        return audioWallAnchor.audio0 + (idealWallMs - audioWallAnchor.perf0) / 1000;
-      }
-      return ac.currentTime + (idealWallMs - performance.now()) / 1000;
-    }
-
-    function beep(duration, frequency, gain, fadeOut, idealWallMs) {
-      const buffer = ensureBeepBuffer(duration, frequency, gain, fadeOut);
-      if (!buffer) return;
-
-      function playWhenReady(ac) {
-        if (!ac || ac.state !== "running") return;
-        const src = ac.createBufferSource();
-        src.buffer = buffer;
-        src.connect(ac.destination);
-        const minT = ac.currentTime + 1 / ac.sampleRate;
-        const when = Math.max(minT, audioTimeForWallMs(ac, idealWallMs));
-        try {
-          src.start(when);
-        } catch {
-          try {
-            src.start(minT);
-          } catch {
-            /* ignore */
+        for (let i = 0; i < sampleCount; i += 1) {
+          let env = 1;
+          if (i < attackSamples) {
+            env = i / attackSamples;
+          } else if (i >= sustainEnd) {
+            env = (sampleCount - 1 - i) / releaseSamples;
           }
+          env = Math.max(0, Math.min(1, env));
+          data[i] = Math.sin((twoPiF * i) / sr) * gain * env;
         }
+        data[0] = 0;
+        data[sampleCount - 1] = 0;
+        beepBufferCache.set(key, buffer);
       }
 
-      const ac = ensureWebAudioContext();
-      if (ac?.state === "running") {
-        playWhenReady(ac);
-        return;
-      }
-      void resumeWebAudioContext().then(() => {
-        const next = ensureWebAudioContext();
-        if (running) {
-          syncAudioWallAnchor();
-        }
-        playWhenReady(next);
-      });
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      src.start(ctx.currentTime + 0.003);
     }
 
     function setPhase(nextPhase) {
@@ -921,12 +804,7 @@
       }
       setPhase(next);
       if (running) {
-        const now = performance.now();
-        endTimeMs = now + remaining * 1000;
-        const ctx = ensureWebAudioContext();
-        if (ctx?.state === "running") {
-          audioWallAnchor = { perf0: now, audio0: ctx.currentTime };
-        }
+        endTimeMs = performance.now() + remaining * 1000;
       }
     }
 
@@ -943,6 +821,7 @@
     }
 
     function finishPhase() {
+      beep(0.7, 990, 0.16, false);
       switchPhase();
       if (running) {
         rafId = requestAnimationFrame(tick);
@@ -956,12 +835,7 @@
 
       if (shown !== beepedSecond) {
         if (shown >= 1 && shown <= 3) {
-          beep(0.25, 990, 0.16, true, endTimeMs - shown * 1000);
-        } else if (shown === 0) {
-          beep(0.7, 990, 0.16, false, endTimeMs);
-          beepedSecond = shown;
-          finishPhase();
-          return;
+          beep(0.25, 990, 0.16, true);
         }
         beepedSecond = shown;
       }
@@ -976,26 +850,12 @@
       rafId = requestAnimationFrame(tick);
     }
 
-    async function startTimer() {
+    function startTimer() {
       if (running) return;
-      let ctx = ensureWebAudioContext();
-      if (ctx && ctx.state !== "running") {
-        try {
-          await ctx.resume();
-        } catch {
-          /* ignore */
-        }
-      }
-      ctx = ensureWebAudioContext();
-      const now = performance.now();
+      void ensureAudioContext().resume();
       hasStarted = true;
       running = true;
-      endTimeMs = now + remaining * 1000;
-      if (ctx && ctx.state === "running") {
-        audioWallAnchor = { perf0: now, audio0: ctx.currentTime };
-      } else {
-        audioWallAnchor = null;
-      }
+      endTimeMs = performance.now() + remaining * 1000;
       void acquireWakeLock();
       updateStartButton();
       updateDurationControlsLock();
@@ -1025,28 +885,11 @@
       if (running) {
         pauseTimer();
       } else {
-        void startTimer();
+        startTimer();
       }
     }
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && running) {
-        void acquireWakeLock();
-        void resumeWebAudioAndPrime();
-      }
-    });
-
-    window.addEventListener(
-      "focus",
-      () => {
-        if (!running) return;
-        void resumeWebAudioAndPrime();
-      },
-      { passive: true }
-    );
-
     window.addEventListener("pageshow", (event) => {
-      void resumeWebAudioAndPrime();
       if (event.persisted) {
         recalcDotGridSteps();
       }
@@ -1067,7 +910,6 @@
     restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
     const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
-    initializeBeepAudio();
     recalcDotGridSteps();
     applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
     updateUI();
