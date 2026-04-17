@@ -781,8 +781,7 @@
       return el;
     }
 
-    function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true) {
-      ensurePlaybackAudioSession();
+    function ensureBeepAsset(duration, frequency, gain, fadeOut) {
       const sr = BEEP_SAMPLE_RATE;
       const attack = 0.008;
       const release = fadeOut ? 0.08 : 0.016;
@@ -793,6 +792,21 @@
         url = URL.createObjectURL(floatToWavBlob(samples, sr));
         beepWavUrlCache.set(key, url);
       }
+      /* Force pool construction and preload at init time. */
+      void getBeepAudio(url);
+      return url;
+    }
+
+    function initializeBeepAudio() {
+      ensurePlaybackAudioSession();
+      /* Prime the exact countdown/end sounds at page load to remove first-play setup delay. */
+      ensureBeepAsset(0.25, 990, 0.16, true);  // 3/2/1
+      ensureBeepAsset(0.7, 990, 0.16, false);  // 0/end
+    }
+
+    function beep(duration = 0.12, frequency = 880, gain = 0.16, fadeOut = true) {
+      ensurePlaybackAudioSession();
+      const url = ensureBeepAsset(duration, frequency, gain, fadeOut);
       const el = getBeepAudio(url);
       el.volume = 1;
       void el.play().catch(() => {
@@ -835,7 +849,7 @@
       document.addEventListener("keydown", rearm, { passive: true });
       window.addEventListener("focus", rearm, { passive: true });
       window.addEventListener("pageshow", () => {
-        ensurePlaybackAudioSession();
+        initializeBeepAudio();
         markBeepNeedsUnlock();
       });
     }
@@ -972,6 +986,7 @@
     restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
     const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
+    initializeBeepAudio();
     installAudioRearmHooks();
     applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
     updateUI();
