@@ -802,12 +802,17 @@
       if (!ctx) return Promise.resolve();
       if (ctx.state === "running") return Promise.resolve();
       if (!webAudioResumePromise) {
-        webAudioResumePromise = ctx
-          .resume()
-          .catch(() => {})
-          .finally(() => {
-            webAudioResumePromise = null;
-          });
+        const resume = ctx.resume().catch(() => {});
+        /* Some browsers can leave resume() pending; never block UI on it. */
+        const capped = Promise.race([
+          resume,
+          new Promise((resolve) => {
+            setTimeout(resolve, 3000);
+          }),
+        ]);
+        webAudioResumePromise = capped.finally(() => {
+          webAudioResumePromise = null;
+        });
       }
       return webAudioResumePromise;
     }
@@ -941,9 +946,10 @@
       rafId = requestAnimationFrame(tick);
     }
 
-    async function startTimer() {
+    function startTimer() {
       if (running) return;
-      await resumeWebAudioContext();
+      /* Do not await: ctx.resume() can stall; timer must start on the same tap. */
+      void resumeWebAudioContext();
       hasStarted = true;
       running = true;
       endTimeMs = performance.now() + remaining * 1000;
