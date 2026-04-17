@@ -88,6 +88,15 @@
       --dot-step-y: 50px;
       --dot-offset-x: 25px;
       --dot-offset-y: 25px;
+      /* Radial fade + optional ring mask (second layer) set in JS; white = full halo until recalc. */
+      --dot-mask-fade: radial-gradient(
+        circle at center,
+        rgba(0, 0, 0, 1) 34%,
+        rgba(0, 0, 0, 0.78) 62%,
+        rgba(0, 0, 0, 0.38) 84%,
+        transparent 100%
+      );
+      --dot-ring-mask: linear-gradient(#fff, #fff);
       position: relative;
       width: min(440px, 100%);
       display: grid;
@@ -126,21 +135,17 @@
           transparent var(--dot-size-far)
         )
         var(--dot-offset-x) var(--dot-offset-y) / var(--dot-step-x) var(--dot-step-y);
-      /* Fade outward so dots get dimmer and visually finer near edges. */
-      -webkit-mask: radial-gradient(
-        circle at center,
-        rgba(0, 0, 0, 1) 34%,
-        rgba(0, 0, 0, 0.78) 62%,
-        rgba(0, 0, 0, 0.38) 84%,
-        transparent 100%
-      );
-      mask: radial-gradient(
-        circle at center,
-        rgba(0, 0, 0, 1) 34%,
-        rgba(0, 0, 0, 0.78) 62%,
-        rgba(0, 0, 0, 0.38) 84%,
-        transparent 100%
-      );
+      /* Fade outward + cut out card interior (slightly expanded) so corner dots are not half-visible. */
+      -webkit-mask-image: var(--dot-ring-mask), var(--dot-mask-fade);
+      -webkit-mask-repeat: no-repeat, no-repeat;
+      -webkit-mask-size: 100% 100%, 100% 100%;
+      -webkit-mask-position: center, center;
+      -webkit-mask-composite: source-in;
+      mask-image: var(--dot-ring-mask), var(--dot-mask-fade);
+      mask-repeat: no-repeat, no-repeat;
+      mask-size: 100% 100%, 100% 100%;
+      mask-position: center, center;
+      mask-composite: intersect;
       opacity: 0.9;
     }
 
@@ -680,6 +685,19 @@
       /* Dot centers sit at (offset + dot-size); subtract dot-size so the grid centers on the card. */
       appEl.style.setProperty("--dot-offset-x", `${rx(stepX / 2 - dotSize)}px`);
       appEl.style.setProperty("--dot-offset-y", `${rx(stepY / 2 - dotSize)}px`);
+
+      const appRadiusPx = Number.parseFloat(cs.getPropertyValue("--app-radius")) || 18;
+      /* Pull inner mask edge slightly into the halo so dots are not drawn where the card corner would clip them. */
+      const padPx = Math.min(6, Math.max(0, band - 1));
+      const inset = Math.max(0, band - padPx);
+      const innerW = totalW - 2 * inset;
+      const innerH = totalH - 2 * inset;
+      const cornerR = Math.min(appRadiusPx, innerW / 2, innerH / 2);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}"><rect width="${totalW}" height="${totalH}" fill="white"/><rect x="${inset}" y="${inset}" width="${innerW}" height="${innerH}" rx="${cornerR}" ry="${cornerR}" fill="black"/></svg>`;
+      appEl.style.setProperty(
+        "--dot-ring-mask",
+        `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+      );
     }
 
     function scheduleRecalcDotGridSteps() {
