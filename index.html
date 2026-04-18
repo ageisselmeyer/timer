@@ -13,7 +13,6 @@
       /* Page + card surface; band color is only for timer ring + glow. */
       --kettlebell-black: #211f1e;
       --browser-ui-kettlebell: var(--kettlebell-black);
-      --rest-bg: #a8b0bd;
       --workout-accent: #000000;
       --workout-accent-rgb: 0 0 0;
       --workout-inner: #1a1a1a;
@@ -22,6 +21,13 @@
       --workout-ui: #d4d4d4;
       --workout-stepper-bg: rgba(255, 255, 255, 0.12);
       --workout-stepper-active: rgba(255, 255, 255, 0.2);
+      --rest-page-bg: rgb(168, 176, 189);
+      --rest-card-frost-rgb: 201 206 234;
+      --rest-ring: #8c94a3;
+      --rest-track: #e4e7ec;
+      --rest-inner-light: #eef1f5;
+      --rest-text: #1e293b;
+      --rest-ui: #64748b;
     }
 
     html {
@@ -33,6 +39,10 @@
       overflow: hidden;
       overflow-x: hidden;
       overscroll-behavior: none;
+    }
+
+    html:has(body.phase-rest) {
+      background-color: var(--rest-page-bg);
     }
 
     * {
@@ -75,8 +85,8 @@
     }
 
     body.phase-rest {
-      background: var(--rest-bg);
-      color: #1e293b;
+      background: var(--rest-page-bg);
+      color: var(--rest-ui);
     }
 
     .app {
@@ -115,7 +125,18 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
     }
 
-    body.phase-workout .app::before {
+    /* Frosted glass card; dot halo uses frosted surface RGB (same layer/mask path, no CPU change). */
+    body.phase-rest .app {
+      background: rgba(255, 255, 255, 0.38);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow: 0 14px 40px rgba(30, 41, 59, 0.12);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      --workout-accent-rgb: var(--rest-card-frost-rgb);
+    }
+
+    body.phase-workout .app::before,
+    body.phase-rest .app::before {
       content: "";
       position: absolute;
       inset: calc(-1 * var(--dot-band));
@@ -149,12 +170,6 @@
       opacity: 0.9;
     }
 
-    body.phase-rest .app {
-      background: rgba(255, 255, 255, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      box-shadow: 0 14px 40px rgba(30, 41, 59, 0.14);
-    }
-
     .timer {
       width: min(340px, 100%);
       max-width: 100%;
@@ -163,6 +178,10 @@
       position: relative;
       display: grid;
       place-items: center;
+      /* Limit style/layout invalidation to the timer subtree when the ring updates. */
+      contain: layout style;
+      /* Keep ring/ticks compositing scoped to reduce blend cost with sibling layers. */
+      isolation: isolate;
     }
 
     .ring {
@@ -170,11 +189,31 @@
       height: 100%;
       border-radius: 50%;
       position: absolute;
-      background:
-        conic-gradient(
-          var(--fill-color) calc(var(--progress, 0) * 1turn),
-          var(--track-color) 0
-        );
+      contain: paint;
+    }
+
+    .ring-svg {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+      transform: translateZ(0);
+    }
+
+    .ring-track {
+      fill: none;
+      stroke: var(--track-color);
+      stroke-width: 11;
+    }
+
+    .ring-prog {
+      fill: none;
+      stroke: var(--fill-color);
+      stroke-width: 11;
+      /* Round caps extend along the arc before 12 o’clock; butt aligns with the top tick. */
+      stroke-linecap: butt;
     }
 
     .ring::before {
@@ -352,19 +391,24 @@
       --tick: rgba(255, 255, 255, 0.96);
     }
 
-    .rest {
-      --fill-color: #8b939e;
-      --track-color: rgba(255, 255, 255, 0.52);
-      --inner-color: #c4c9d4;
-      --tick: rgba(255, 255, 255, 0.92);
+    /* Rest: light ring stack (screenshot: pale track, blue-gray progress, white ticks). */
+    body.phase-rest .timer.workout {
+      --fill-color: var(--rest-ring);
+      --track-color: var(--rest-track);
+      --inner-color: var(--rest-inner-light);
+      --tick: rgba(255, 255, 255, 0.98);
+    }
+
+    body.phase-rest .ticks {
+      opacity: 1;
     }
 
     .workout .center {
       color: var(--workout-text-strong);
     }
 
-    .rest .center {
-      color: #1e293b;
+    body.phase-rest .timer.workout .center {
+      color: var(--rest-text);
     }
 
     body.phase-workout .meta {
@@ -372,7 +416,7 @@
     }
 
     body.phase-rest .meta {
-      color: #475569;
+      color: var(--rest-ui);
     }
 
     body.phase-workout .durations > label {
@@ -380,12 +424,17 @@
     }
 
     body.phase-rest .durations > label {
-      color: #64748b;
+      color: var(--rest-ui);
     }
 
     body.phase-workout .field-stepper {
       border-color: rgba(255, 255, 255, 0.14);
       background: rgba(255, 255, 255, 0.06);
+    }
+
+    body.phase-rest .field-stepper {
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.95);
     }
 
     body.phase-workout .stepper-btn {
@@ -397,18 +446,13 @@
       background: var(--workout-stepper-active);
     }
 
-    body.phase-rest .field-stepper {
-      border-color: rgba(255, 255, 255, 0.75);
-      background: rgba(255, 255, 255, 0.82);
-    }
-
     body.phase-rest .stepper-btn {
-      background: rgba(71, 85, 105, 0.12);
-      color: #ffffff;
+      background: rgba(30, 41, 59, 0.06);
+      color: var(--rest-text);
     }
 
     body.phase-rest .stepper-btn:active {
-      background: rgba(71, 85, 105, 0.2);
+      background: rgba(30, 41, 59, 0.11);
     }
 
     /* Duration values: before start = same as Start; after start = same as center counter. */
@@ -424,8 +468,8 @@
     body.phase-rest:not(.has-started) .durations > label:nth-child(2) input[type="number"],
     body.phase-rest:not(.has-started) #workoutInput,
     body.phase-rest:not(.has-started) #restInput {
-      color: #475569;
-      -webkit-text-fill-color: #475569;
+      color: var(--rest-text);
+      -webkit-text-fill-color: var(--rest-text);
     }
 
     body.phase-workout.has-started .durations > label:first-child input[type="number"]:disabled,
@@ -440,8 +484,8 @@
     body.phase-rest.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
     body.phase-rest.has-started #workoutInput:disabled,
     body.phase-rest.has-started #restInput:disabled {
-      color: #1e293b;
-      -webkit-text-fill-color: #1e293b;
+      color: var(--rest-text);
+      -webkit-text-fill-color: var(--rest-text);
     }
 
     body.has-started .field-stepper input[type="number"]:disabled {
@@ -458,12 +502,12 @@
     }
 
     body.phase-rest .buttons button {
-      background: rgba(255, 255, 255, 0.92);
-      color: #475569;
+      background: #ffffff;
+      color: var(--rest-text);
     }
 
     body.phase-rest .buttons button:hover {
-      background: #ffffff;
+      background: #f8fafc;
     }
 
     @media (max-width: 480px) {
@@ -494,7 +538,19 @@
 <body class="phase-workout">
   <main class="app">
     <section id="timer" class="timer workout">
-      <div class="ring" id="ring" style="--progress:0"></div>
+      <div class="ring" id="ring">
+        <svg class="ring-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <circle class="ring-track" cx="50" cy="50" r="44" />
+          <circle
+            class="ring-prog"
+            id="ringProgress"
+            cx="50"
+            cy="50"
+            r="44"
+            transform="rotate(-90 50 50)"
+          />
+        </svg>
+      </div>
       <div class="ticks"></div>
       <div class="center" id="seconds">40</div>
     </section>
@@ -529,7 +585,10 @@
   <script>
     const appEl = document.querySelector(".app");
     const timerEl = document.getElementById("timer");
-    const ringEl = document.getElementById("ring");
+    const ringProgressEl = document.getElementById("ringProgress");
+    const RING_LEN = 2 * Math.PI * 44;
+    ringProgressEl.setAttribute("stroke-dasharray", `${RING_LEN} ${RING_LEN}`);
+    ringProgressEl.style.strokeDashoffset = String(RING_LEN);
     const secondsEl = document.getElementById("seconds");
     const phaseLabelEl = document.getElementById("phaseLabel");
     const workoutInput = document.getElementById("workoutInput");
@@ -713,12 +772,20 @@
       return Number.isFinite(value) && value >= MIN_DURATION_SEC ? value : fallback;
     }
 
+    /** setTimeout cadence while visible; hidden tab uses 1 Hz. Ring dedupes strokeDashoffset via toFixed(2). */
+    const TIMER_FPS = 60;
+    const TIMER_TICK_MS = 1000 / TIMER_FPS;
+
     let phase = PHASE_WORKOUT;
     let phaseDuration = getInputValue(workoutInput, 40);
     let remaining = phaseDuration;
     let running = false;
-    let rafId = null;
+    let timerTickId = null;
     let endTimeMs = 0;
+    /** Avoid rewriting `secondsEl` when the displayed integer has not changed. */
+    let lastRenderedCeilSec = null;
+    /** Skip redundant `strokeDashoffset` writes when quantized value unchanged (fewer style commits). */
+    let lastRingDashKey = null;
     let audioCtx = null;
     const beepBufferCache = new Map();
     let beepedSecond = null;
@@ -797,40 +864,50 @@
 
     function beep(duration, frequency, gain, fadeOut) {
       const ctx = ensureAudioContext();
-      const sr = ctx.sampleRate;
-      const attack = 0.008;
-      const release = fadeOut ? 0.08 : 0.016;
-      const key = [duration, frequency, gain, fadeOut].join("|");
-      let buffer = beepBufferCache.get(key);
 
-      if (!buffer) {
-        const sampleCount = Math.max(1, Math.floor(duration * sr));
-        buffer = ctx.createBuffer(1, sampleCount, sr);
-        const data = buffer.getChannelData(0);
-        const attackSamples = Math.max(1, Math.floor(attack * sr));
-        const releaseSamples = Math.max(1, Math.floor(release * sr));
-        const sustainEnd = Math.max(0, sampleCount - releaseSamples);
-        const twoPiF = 2 * Math.PI * frequency;
+      const play = () => {
+        if (ctx.state !== "running") return;
+        const sr = ctx.sampleRate;
+        const attack = 0.008;
+        const release = fadeOut ? 0.08 : 0.016;
+        const key = [duration, frequency, gain, fadeOut].join("|");
+        let buffer = beepBufferCache.get(key);
 
-        for (let i = 0; i < sampleCount; i += 1) {
-          let env = 1;
-          if (i < attackSamples) {
-            env = i / attackSamples;
-          } else if (i >= sustainEnd) {
-            env = (sampleCount - 1 - i) / releaseSamples;
+        if (!buffer) {
+          const sampleCount = Math.max(1, Math.floor(duration * sr));
+          buffer = ctx.createBuffer(1, sampleCount, sr);
+          const data = buffer.getChannelData(0);
+          const attackSamples = Math.max(1, Math.floor(attack * sr));
+          const releaseSamples = Math.max(1, Math.floor(release * sr));
+          const sustainEnd = Math.max(0, sampleCount - releaseSamples);
+          const twoPiF = 2 * Math.PI * frequency;
+
+          for (let i = 0; i < sampleCount; i += 1) {
+            let env = 1;
+            if (i < attackSamples) {
+              env = i / attackSamples;
+            } else if (i >= sustainEnd) {
+              env = (sampleCount - 1 - i) / releaseSamples;
+            }
+            env = Math.max(0, Math.min(1, env));
+            data[i] = Math.sin((twoPiF * i) / sr) * gain * env;
           }
-          env = Math.max(0, Math.min(1, env));
-          data[i] = Math.sin((twoPiF * i) / sr) * gain * env;
+          data[0] = 0;
+          data[sampleCount - 1] = 0;
+          beepBufferCache.set(key, buffer);
         }
-        data[0] = 0;
-        data[sampleCount - 1] = 0;
-        beepBufferCache.set(key, buffer);
-      }
 
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.connect(ctx.destination);
-      src.start(ctx.currentTime + 0.003);
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(ctx.destination);
+        src.start(ctx.currentTime + 0.003);
+      };
+
+      if (ctx.state === "running") {
+        play();
+        return;
+      }
+      void ctx.resume().then(play);
     }
 
     function setPhase(nextPhase) {
@@ -853,32 +930,65 @@
       if (running) {
         endTimeMs = performance.now() + remaining * 1000;
       }
+      scheduleRecalcDotGridSteps();
+    }
+
+    function syncPhaseChrome() {
+      timerEl.classList.add("workout");
+      document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
+      document.body.classList.toggle("phase-rest", phase === PHASE_REST);
+      const label = phase === PHASE_WORKOUT ? "Workout" : "Rest";
+      if (phaseLabelEl.textContent !== label) {
+        phaseLabelEl.textContent = label;
+      }
+    }
+
+    function syncRingFromRemaining() {
+      const doneRatio = 1 - (remaining / phaseDuration);
+      const p = Math.max(0, Math.min(1, doneRatio));
+      const off = RING_LEN * (1 - p);
+      const key = off.toFixed(2);
+      if (key === lastRingDashKey) return;
+      lastRingDashKey = key;
+      ringProgressEl.style.strokeDashoffset = key;
     }
 
     function updateUI() {
-      timerEl.classList.toggle("workout", phase === PHASE_WORKOUT);
-      timerEl.classList.toggle("rest", phase === PHASE_REST);
-      document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
-      document.body.classList.toggle("phase-rest", phase === PHASE_REST);
+      syncPhaseChrome();
       const shown = Math.max(0, Math.ceil(remaining));
       secondsEl.textContent = String(shown);
-      phaseLabelEl.textContent = phase === PHASE_WORKOUT ? "Workout" : "Rest";
-      const doneRatio = 1 - (remaining / phaseDuration);
-      ringEl.style.setProperty("--progress", String(Math.max(0, Math.min(1, doneRatio))));
+      lastRenderedCeilSec = shown;
+      lastRingDashKey = null;
+      syncRingFromRemaining();
+    }
+
+    function nextTickDelayMs() {
+      const msLeft = endTimeMs - performance.now();
+      if (msLeft <= 0) return 0;
+      const cap = document.hidden ? 1000 : TIMER_TICK_MS;
+      return Math.min(cap, Math.max(8, msLeft));
+    }
+
+    function clearTimerTick() {
+      if (timerTickId !== null) {
+        clearTimeout(timerTickId);
+        timerTickId = null;
+      }
     }
 
     function finishPhase() {
       beep(0.7, 990, 0.16, false);
       switchPhase();
       if (running) {
-        rafId = requestAnimationFrame(tick);
+        timerTickId = setTimeout(tick, 0);
       }
     }
 
-    function tick(now) {
+    function tick() {
       if (!running) return;
+      const now = performance.now();
       remaining = Math.max(0, (endTimeMs - now) / 1000);
-      const shown = Math.ceil(remaining);
+      const shown = Math.max(0, Math.ceil(remaining));
 
       if (shown !== beepedSecond) {
         if (shown >= 1 && shown <= 3) {
@@ -887,35 +997,50 @@
         beepedSecond = shown;
       }
 
-      updateUI();
+      syncRingFromRemaining();
+      if (shown !== lastRenderedCeilSec) {
+        secondsEl.textContent = String(shown);
+        lastRenderedCeilSec = shown;
+      }
 
       if (remaining <= 0) {
         finishPhase();
         return;
       }
 
-      rafId = requestAnimationFrame(tick);
+      if (!running) return;
+      timerTickId = setTimeout(tick, nextTickDelayMs());
     }
 
     function startTimer() {
       if (running) return;
-      void ensureAudioContext().resume();
       hasStarted = true;
       running = true;
-      endTimeMs = performance.now() + remaining * 1000;
+      const ctx = ensureAudioContext();
       void acquireWakeLock();
       updateStartButton();
       updateDurationControlsLock();
-      rafId = requestAnimationFrame(tick);
+      void ctx.resume().then(() => {
+        if (!running) return;
+        endTimeMs = performance.now() + remaining * 1000;
+        clearTimerTick();
+        timerTickId = setTimeout(tick, 0);
+      });
     }
 
     function pauseTimer() {
       if (!running) return;
+      remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
       running = false;
       void releaseWakeLock();
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
+      clearTimerTick();
+      lastRingDashKey = null;
+      syncRingFromRemaining();
+      const shown = Math.max(0, Math.ceil(remaining));
+      secondsEl.textContent = String(shown);
+      lastRenderedCeilSec = shown;
+      if (audioCtx && audioCtx.state === "running") {
+        void audioCtx.suspend();
       }
       updateStartButton();
     }
@@ -938,11 +1063,27 @@
 
     window.addEventListener("pageshow", () => {
       scheduleRecalcDotGridSteps();
+      if (running) {
+        void acquireWakeLock();
+        if (audioCtx) void audioCtx.resume();
+        remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
+        clearTimerTick();
+        timerTickId = setTimeout(tick, nextTickDelayMs());
+      }
     });
 
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         scheduleRecalcDotGridSteps();
+        if (running) {
+          void acquireWakeLock();
+          if (audioCtx) void audioCtx.resume();
+          remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
+          clearTimerTick();
+          timerTickId = setTimeout(tick, nextTickDelayMs());
+        }
+      } else if (running) {
+        void releaseWakeLock();
       }
     });
 
@@ -954,7 +1095,14 @@
     }
 
     if (typeof ResizeObserver !== "undefined" && appEl) {
-      const dotGridResizeObserver = new ResizeObserver(() => scheduleRecalcDotGridSteps());
+      let dotGridRoTimer = null;
+      const dotGridResizeObserver = new ResizeObserver(() => {
+        clearTimeout(dotGridRoTimer);
+        dotGridRoTimer = setTimeout(() => {
+          dotGridRoTimer = null;
+          scheduleRecalcDotGridSteps();
+        }, 120);
+      });
       dotGridResizeObserver.observe(appEl);
     }
 
