@@ -1,0 +1,18 @@
+{
+  "name": "Workout Timer",
+  "short_name": "Timer",
+  "description": "A simple workout and rest interval timer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a1817",
+  "theme_color": "#1a1817",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
