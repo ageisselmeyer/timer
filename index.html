@@ -17,19 +17,19 @@
   <style>
     :root {
       --text: #111;
-      /* Page + card surface; band color is only for timer ring + glow. */
+      /* Page background for the workout phase; band color is the timer ring only. */
       --kettlebell-black: #1a1817;
       --browser-ui-kettlebell: var(--kettlebell-black);
       --workout-accent: #000000;
       --workout-accent-rgb: 0 0 0;
-      --workout-inner: #1a1a1a;
+      /* Constant light grey across palette swaps; matches --rest-inner-light. */
+      --workout-inner: #eef1f5;
       --workout-body-text: #e8e8e8;
       --workout-text-strong: #fafafa;
       --workout-ui: #d4d4d4;
       --workout-stepper-bg: rgba(255, 255, 255, 0.12);
       --workout-stepper-active: rgba(255, 255, 255, 0.2);
       --rest-page-bg: rgb(168, 176, 189);
-      --rest-card-frost-rgb: 201 206 234;
       --rest-ring: #8c94a3;
       --rest-track: #e4e7ec;
       --rest-inner-light: #eef1f5;
@@ -97,7 +97,6 @@
     }
 
     .app {
-      --app-radius: 18px;
       --dot-band: 80px;
       --dot-size: 4px;
       --dot-size-far: 2.6px;
@@ -105,7 +104,6 @@
       --dot-step-y: 50px;
       --dot-offset-x: 25px;
       --dot-offset-y: 25px;
-      /* Radial fade + optional ring mask (second layer) set in JS; white = full halo until recalc. */
       --dot-mask-fade: radial-gradient(
         circle at center,
         rgba(0, 0, 0, 1) 34%,
@@ -120,50 +118,41 @@
       gap: 18px;
       /* stretch rows full width; center .timer explicitly (center + shrink-wrap mis-centers .controls) */
       justify-items: stretch;
-      border-radius: var(--app-radius);
       padding: 20px 20px 24px;
-      /* Keep card fill immediate so dot halo never flashes through on phase switches. */
-      transition: border-color 0.35s ease;
     }
 
     body.phase-workout .app {
       background: var(--kettlebell-black);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
     }
 
-    /* Frosted glass card; dot halo uses frosted surface RGB (same layer/mask path, no CPU change). */
     body.phase-rest .app {
-      background: rgba(255, 255, 255, 0.38);
-      border: 1px solid rgba(255, 255, 255, 0.65);
-      box-shadow: 0 14px 40px rgba(30, 41, 59, 0.12);
-      -webkit-backdrop-filter: blur(16px);
-      backdrop-filter: blur(16px);
-      --workout-accent-rgb: var(--rest-card-frost-rgb);
+      background: var(--rest-page-bg);
     }
 
+    /* Invisible halo: same layer-promoting properties HEAD relied on (opacity < 1, mask-composite,
+       80px-extended bounding box, z-index: -2) so Safari's compositing path matches the 17% baseline,
+       but the dot gradients are fully transparent so nothing is painted. Removing this regresses CPU
+       to ~40% in Safari Timeline. */
     body.phase-workout .app::before,
     body.phase-rest .app::before {
       content: "";
       position: absolute;
       inset: calc(-1 * var(--dot-band));
       z-index: -2;
-      border-radius: calc(var(--app-radius) + var(--dot-band));
       pointer-events: none;
       background:
         radial-gradient(
           circle at var(--dot-size) var(--dot-size),
-          rgb(var(--workout-accent-rgb) / 0.78) calc(var(--dot-size) - 1px),
+          rgba(0, 0, 0, 0) calc(var(--dot-size) - 1px),
           transparent var(--dot-size)
         )
         var(--dot-offset-x) var(--dot-offset-y) / var(--dot-step-x) var(--dot-step-y),
         radial-gradient(
           circle at var(--dot-size-far) var(--dot-size-far),
-          rgb(var(--workout-accent-rgb) / 0.44) calc(var(--dot-size-far) - 0.8px),
+          rgba(0, 0, 0, 0) calc(var(--dot-size-far) - 0.8px),
           transparent var(--dot-size-far)
         )
         var(--dot-offset-x) var(--dot-offset-y) / var(--dot-step-x) var(--dot-step-y);
-      /* Fade outward + cut out card interior (slightly expanded) so corner dots are not half-visible. */
       -webkit-mask-image: var(--dot-ring-mask), var(--dot-mask-fade);
       -webkit-mask-repeat: no-repeat, no-repeat;
       -webkit-mask-size: 100% 100%, 100% 100%;
@@ -178,7 +167,7 @@
     }
 
     .timer {
-      width: min(340px, 100%);
+      width: min(380px, 100%);
       max-width: 100%;
       justify-self: center;
       aspect-ratio: 1 / 1;
@@ -212,21 +201,21 @@
     .ring-track {
       fill: none;
       stroke: var(--track-color);
-      stroke-width: 11;
+      stroke-width: 12;
     }
 
     .ring-prog {
       fill: none;
       stroke: var(--fill-color);
-      stroke-width: 11;
-      /* Round caps extend along the arc before 12 o’clock; butt aligns with the top tick. */
+      stroke-width: 12;
       stroke-linecap: butt;
     }
 
     .ring::before {
       content: "";
       position: absolute;
-      inset: 11%;
+      /* Disc edge meets the stroke's inner edge (r 44, stroke 12 → inner at viewBox 38 = 12% inset). */
+      inset: 12%;
       border-radius: 50%;
       background: var(--inner-color);
       transform: rotate(90deg);
@@ -519,13 +508,12 @@
 
     @media (max-width: 480px) {
       .app {
-        --app-radius: 16px;
         gap: 14px;
         padding: 14px 14px 18px;
       }
 
       .timer {
-        width: min(90%, 290px);
+        width: min(94%, 320px);
       }
 
       .center {
@@ -590,7 +578,6 @@
   </main>
 
   <script>
-    const appEl = document.querySelector(".app");
     const timerEl = document.getElementById("timer");
     const ringProgressEl = document.getElementById("ringProgress");
     const RING_LEN = 2 * Math.PI * 44;
@@ -708,7 +695,6 @@
       const root = document.documentElement;
       root.style.setProperty("--workout-accent", canonical);
       root.style.setProperty("--workout-accent-rgb", `${r} ${g} ${b}`);
-      root.style.setProperty("--workout-inner", blendHex("#ffffff", canonical, 0.14));
       root.style.setProperty("--workout-body-text", blendHex("#0f172a", canonical, 0.1));
       root.style.setProperty("--workout-text-strong", blendHex("#0f172a", canonical, 0.45));
       root.style.setProperty("--workout-ui", blendHex("#0f172a", canonical, 0.32));
@@ -722,54 +708,6 @@
         requestAnimationFrame(() => {
           applyReal();
           updateUI();
-        });
-      });
-    }
-
-    function recalcDotGridSteps(retry = 0) {
-      if (!appEl) return;
-      const cs = getComputedStyle(appEl);
-      const band = Number.parseFloat(cs.getPropertyValue("--dot-band")) || 80;
-      const dotSize = Number.parseFloat(cs.getPropertyValue("--dot-size")) || 4;
-      const rect = appEl.getBoundingClientRect();
-      /* Safari can report 0/stale sizes for a frame after tab restore; retry a few paints. */
-      if (rect.width < 2 || rect.height < 2) {
-        if (retry < 12) {
-          requestAnimationFrame(() => recalcDotGridSteps(retry + 1));
-        }
-        return;
-      }
-      const totalW = rect.width + 2 * band;
-      const totalH = rect.height + 2 * band;
-      const cols = 15;
-      const rows = 18;
-      const stepX = totalW / cols;
-      const stepY = totalH / rows;
-      const rx = (n) => Math.round(n * 1000) / 1000;
-      appEl.style.setProperty("--dot-step-x", `${rx(stepX)}px`);
-      appEl.style.setProperty("--dot-step-y", `${rx(stepY)}px`);
-      /* Dot centers sit at (offset + dot-size); subtract dot-size so the grid centers on the card. */
-      appEl.style.setProperty("--dot-offset-x", `${rx(stepX / 2 - dotSize)}px`);
-      appEl.style.setProperty("--dot-offset-y", `${rx(stepY / 2 - dotSize)}px`);
-
-      const appRadiusPx = Number.parseFloat(cs.getPropertyValue("--app-radius")) || 18;
-      /* Pull inner mask edge slightly into the halo so dots are not drawn where the card corner would clip them. */
-      const padPx = Math.min(6, Math.max(0, band - 1));
-      const inset = Math.max(0, band - padPx);
-      const innerW = totalW - 2 * inset;
-      const innerH = totalH - 2 * inset;
-      const cornerR = Math.min(appRadiusPx, innerW / 2, innerH / 2);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}"><rect width="${totalW}" height="${totalH}" fill="white"/><rect x="${inset}" y="${inset}" width="${innerW}" height="${innerH}" rx="${cornerR}" ry="${cornerR}" fill="black"/></svg>`;
-      appEl.style.setProperty(
-        "--dot-ring-mask",
-        `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
-      );
-    }
-
-    function scheduleRecalcDotGridSteps() {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          recalcDotGridSteps();
         });
       });
     }
@@ -937,7 +875,6 @@
       if (running) {
         endTimeMs = performance.now() + remaining * 1000;
       }
-      scheduleRecalcDotGridSteps();
     }
 
     function syncPhaseChrome() {
@@ -1069,7 +1006,6 @@
     }
 
     window.addEventListener("pageshow", () => {
-      scheduleRecalcDotGridSteps();
       if (running) {
         void acquireWakeLock();
         if (audioCtx) void audioCtx.resume();
@@ -1081,7 +1017,6 @@
 
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
-        scheduleRecalcDotGridSteps();
         if (running) {
           void acquireWakeLock();
           if (audioCtx) void audioCtx.resume();
@@ -1093,25 +1028,6 @@
         void releaseWakeLock();
       }
     });
-
-    window.addEventListener("resize", scheduleRecalcDotGridSteps, { passive: true });
-    window.addEventListener("orientationchange", scheduleRecalcDotGridSteps, { passive: true });
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", scheduleRecalcDotGridSteps, { passive: true });
-    }
-
-    if (typeof ResizeObserver !== "undefined" && appEl) {
-      let dotGridRoTimer = null;
-      const dotGridResizeObserver = new ResizeObserver(() => {
-        clearTimeout(dotGridRoTimer);
-        dotGridRoTimer = setTimeout(() => {
-          dotGridRoTimer = null;
-          scheduleRecalcDotGridSteps();
-        }, 120);
-      });
-      dotGridResizeObserver.observe(appEl);
-    }
 
     startBtn.addEventListener("click", toggleStartPause);
     resetBtn.addEventListener("click", resetTimer);
@@ -1125,7 +1041,6 @@
     restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
     const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
-    scheduleRecalcDotGridSteps();
     applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
     updateUI();
     updateStartButton();
