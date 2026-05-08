@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="96" fill="#111111" />
-  <path d="M256 106 A150 150 0 0 1 406 256" fill="none" stroke="#2187f3" stroke-width="54" />
-  <path d="M406 256 A150 150 0 0 1 256 406" fill="none" stroke="#ffcb00" stroke-width="54" />
-  <path d="M256 406 A150 150 0 0 1 106 256" fill="none" stroke="#2c9323" stroke-width="54" />
-  <path d="M106 256 A150 150 0 0 1 256 106" fill="none" stroke="#ff0024" stroke-width="54" />
+  <path d="M256 106 A150 150 0 0 1 373.27 162.48" fill="none" stroke="#ff69b4" stroke-width="54" />
+  <path d="M373.27 162.48 A150 150 0 0 1 402.24 289.38" fill="none" stroke="#2187f3" stroke-width="54" />
+  <path d="M402.24 289.38 A150 150 0 0 1 321.08 391.15" fill="none" stroke="#ffcb00" stroke-width="54" />
+  <path d="M321.08 391.15 A150 150 0 0 1 190.92 391.15" fill="none" stroke="#9d84cb" stroke-width="54" />
+  <path d="M190.92 391.15 A150 150 0 0 1 109.76 289.38" fill="none" stroke="#2c9323" stroke-width="54" />
+  <path d="M109.76 289.38 A150 150 0 0 1 138.73 162.48" fill="none" stroke="#fd6f37" stroke-width="54" />
+  <path d="M138.73 162.48 A150 150 0 0 1 256 106" fill="none" stroke="#ff0024" stroke-width="54" />
   <circle cx="256" cy="256" r="129" fill="#d4d4d4" />
-  <path d="M256 256 L256 127 A129 129 0 0 1 385 256 Z" fill="#b8b8b8" />
+  <path d="M256 256 L256 127 A129 129 0 0 1 357 176 Z" fill="#b8b8b8" />
 </svg>
