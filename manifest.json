@@ -1,6 +1,6 @@
 {
   "name": "Workout Timer",
-  "short_name": "Timer",
+  "short_name": "Workout Timer",
   "description": "A simple workout and rest interval timer.",
   "start_url": "./",
   "scope": "./",
