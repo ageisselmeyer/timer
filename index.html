@@ -717,15 +717,15 @@
       return Number.isFinite(value) && value >= MIN_DURATION_SEC ? value : fallback;
     }
 
-    /** setTimeout cadence while visible; hidden tab uses 1 Hz. Ring dedupes strokeDashoffset via toFixed(2). */
-    const TIMER_FPS = 60;
-    const TIMER_TICK_MS = 1000 / TIMER_FPS;
+    /** Hidden-tab cadence; visible mode uses requestAnimationFrame for display-synced ring motion. */
+    const HIDDEN_TICK_MS = 1000;
 
     let phase = PHASE_WORKOUT;
     let phaseDuration = getInputValue(workoutInput, 40);
     let remaining = phaseDuration;
     let running = false;
     let timerTickId = null;
+    let rafId = null;
     let endTimeMs = 0;
     /** Avoid rewriting `secondsEl` when the displayed integer has not changed. */
     let lastRenderedCeilSec = null;
@@ -906,17 +906,14 @@
       syncRingFromRemaining();
     }
 
-    function nextTickDelayMs() {
-      const msLeft = endTimeMs - performance.now();
-      if (msLeft <= 0) return 0;
-      const cap = document.hidden ? 1000 : TIMER_TICK_MS;
-      return Math.min(cap, Math.max(8, msLeft));
-    }
-
-    function clearTimerTick() {
+    function clearScheduler() {
       if (timerTickId !== null) {
         clearTimeout(timerTickId);
         timerTickId = null;
+      }
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
       }
     }
 
@@ -924,7 +921,7 @@
       beep(0.7, 990, 0.16, false);
       switchPhase();
       if (running) {
-        timerTickId = setTimeout(tick, 0);
+        scheduleNextTick();
       }
     }
 
@@ -953,7 +950,21 @@
       }
 
       if (!running) return;
-      timerTickId = setTimeout(tick, nextTickDelayMs());
+      scheduleNextTick();
+    }
+
+    function scheduleNextTick() {
+      if (!running) return;
+      if (document.hidden) {
+        const msLeft = endTimeMs - performance.now();
+        const delay = msLeft <= 0 ? 0 : Math.min(HIDDEN_TICK_MS, Math.max(8, msLeft));
+        timerTickId = setTimeout(tick, delay);
+        return;
+      }
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        tick();
+      });
     }
 
     function startTimer() {
@@ -967,8 +978,8 @@
       void ctx.resume().then(() => {
         if (!running) return;
         endTimeMs = performance.now() + remaining * 1000;
-        clearTimerTick();
-        timerTickId = setTimeout(tick, 0);
+        clearScheduler();
+        scheduleNextTick();
       });
     }
 
@@ -977,7 +988,7 @@
       remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
       running = false;
       void releaseWakeLock();
-      clearTimerTick();
+      clearScheduler();
       lastRingDashKey = null;
       syncRingFromRemaining();
       const shown = Math.max(0, Math.ceil(remaining));
@@ -1010,8 +1021,8 @@
         void acquireWakeLock();
         if (audioCtx) void audioCtx.resume();
         remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
-        clearTimerTick();
-        timerTickId = setTimeout(tick, nextTickDelayMs());
+        clearScheduler();
+        scheduleNextTick();
       }
     });
 
@@ -1021,11 +1032,13 @@
           void acquireWakeLock();
           if (audioCtx) void audioCtx.resume();
           remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
-          clearTimerTick();
-          timerTickId = setTimeout(tick, nextTickDelayMs());
+          clearScheduler();
+          scheduleNextTick();
         }
       } else if (running) {
         void releaseWakeLock();
+        clearScheduler();
+        scheduleNextTick();
       }
     });
 
