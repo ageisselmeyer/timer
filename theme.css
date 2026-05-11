@@ -1,5 +1,4 @@
 :root {
-  --text: #111;
   /* Page background for the workout phase; band color is the timer ring only. */
   --kettlebell-black: #1a1817;
   --browser-ui-kettlebell: var(--kettlebell-black);
@@ -59,7 +58,8 @@ body {
   display: grid;
   place-items: center;
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: var(--text);
+  /* Default matches index.html phase-workout; rest overrides. */
+  color: var(--workout-body-text);
   padding: 16px;
   box-sizing: border-box;
   /* No background transition: interpolating black → band color can flash greenish mid-tones. */
@@ -68,7 +68,6 @@ body {
 
 body.phase-workout {
   background: var(--kettlebell-black);
-  color: var(--workout-body-text);
 }
 
 body.phase-rest {
@@ -354,10 +353,6 @@ body.phase-rest .app::before {
   min-width: 96px;
   min-height: 44px;
   touch-action: manipulation;
-}
-
-.buttons button:hover {
-  background: rgba(255, 255, 255, 0.97);
 }
 
 .workout {
