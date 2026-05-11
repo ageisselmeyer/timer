@@ -5,19 +5,16 @@
   --browser-ui-kettlebell: var(--kettlebell-black);
   --workout-accent: #000000;
   --workout-accent-rgb: 0 0 0;
-  /* Constant light grey across palette swaps; matches --rest-inner-light. */
+  /* Constant light grey across palette swaps (timer inner disc). */
   --workout-inner: #eef1f5;
   --workout-body-text: #e8e8e8;
   --workout-text-strong: #fafafa;
-  --workout-ui: #d4d4d4;
   --workout-stepper-bg: rgba(255, 255, 255, 0.12);
   --workout-stepper-active: rgba(255, 255, 255, 0.2);
-  --rest-page-bg: rgb(168, 176, 189);
-  --rest-ring: #8c94a3;
-  --rest-track: #e4e7ec;
-  --rest-inner-light: #eef1f5;
-  --rest-text: #1e293b;
-  --rest-ui: #64748b;
+  /* Rest shell: same fill as timer inner disc; distinct from workout kettlebell. */
+  --rest-page-bg: var(--workout-inner);
+  /* Opaque grey = same RGB as 48% white on kettlebell; workout track + rest progress (no tint over band). */
+  --timer-track-gray: color-mix(in srgb, #ffffff 48%, var(--kettlebell-black));
 }
 
 html {
@@ -76,7 +73,7 @@ body.phase-workout {
 
 body.phase-rest {
   background: var(--rest-page-bg);
-  color: var(--rest-ui);
+  color: var(--workout-text-strong);
 }
 
 .app {
@@ -365,45 +362,29 @@ body.phase-rest .app::before {
 
 .workout {
   --fill-color: var(--workout-accent);
-  --track-color: rgba(255, 255, 255, 0.48);
+  --track-color: var(--timer-track-gray);
   --inner-color: var(--workout-inner);
   --tick: rgba(255, 255, 255, 0.96);
 }
 
-/* Rest: light ring stack (screenshot: pale track, blue-gray progress, white ticks). */
+/* Rest: inverted vs workout — full ring = band color; shrinking arc = same grey wash as workout track. */
 body.phase-rest .timer.workout {
-  --fill-color: var(--rest-ring);
-  --track-color: var(--rest-track);
-  --inner-color: var(--rest-inner-light);
-  --tick: rgba(255, 255, 255, 0.98);
-}
-
-body.phase-rest .ticks {
-  opacity: 1;
+  --fill-color: var(--timer-track-gray);
+  --track-color: var(--workout-accent);
+  --inner-color: var(--workout-inner);
+  --tick: rgba(255, 255, 255, 0.96);
 }
 
 .workout .center {
   color: var(--workout-text-strong);
 }
 
-body.phase-rest .timer.workout .center {
-  color: var(--rest-text);
-}
-
-body.phase-workout .meta {
-  color: var(--workout-ui);
-}
-
-body.phase-rest .meta {
-  color: var(--rest-ui);
-}
-
-body.phase-workout .durations > label {
-  color: var(--workout-ui);
-}
-
+/* Same ink as the big center digits (not the main Start/Reset row). */
+body.phase-workout .meta,
+body.phase-rest .meta,
+body.phase-workout .durations > label,
 body.phase-rest .durations > label {
-  color: var(--rest-ui);
+  color: var(--workout-text-strong);
 }
 
 body.phase-workout .field-stepper {
@@ -412,26 +393,19 @@ body.phase-workout .field-stepper {
 }
 
 body.phase-rest .field-stepper {
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.88);
 }
 
-body.phase-workout .stepper-btn {
+body.phase-workout .stepper-btn,
+body.phase-rest .stepper-btn {
   background: var(--workout-stepper-bg);
   color: #ffffff;
 }
 
-body.phase-workout .stepper-btn:active {
-  background: var(--workout-stepper-active);
-}
-
-body.phase-rest .stepper-btn {
-  background: rgba(30, 41, 59, 0.06);
-  color: var(--rest-text);
-}
-
+body.phase-workout .stepper-btn:active,
 body.phase-rest .stepper-btn:active {
-  background: rgba(30, 41, 59, 0.11);
+  background: var(--workout-stepper-active);
 }
 
 /* Duration values: before start = same as Start; after start = same as center counter. */
@@ -447,8 +421,8 @@ body.phase-rest:not(.has-started) .durations > label:first-child input[type="num
 body.phase-rest:not(.has-started) .durations > label:nth-child(2) input[type="number"],
 body.phase-rest:not(.has-started) #workoutInput,
 body.phase-rest:not(.has-started) #restInput {
-  color: var(--rest-text);
-  -webkit-text-fill-color: var(--rest-text);
+  color: var(--workout-accent);
+  -webkit-text-fill-color: var(--workout-accent);
 }
 
 body.phase-workout.has-started .durations > label:first-child input[type="number"]:disabled,
@@ -463,8 +437,8 @@ body.phase-rest.has-started .durations > label:first-child input[type="number"]:
 body.phase-rest.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
 body.phase-rest.has-started #workoutInput:disabled,
 body.phase-rest.has-started #restInput:disabled {
-  color: var(--rest-text);
-  -webkit-text-fill-color: var(--rest-text);
+  color: var(--workout-text-strong);
+  -webkit-text-fill-color: var(--workout-text-strong);
 }
 
 body.has-started .field-stepper input[type="number"]:disabled {
@@ -472,21 +446,23 @@ body.has-started .field-stepper input[type="number"]:disabled {
 }
 
 body.phase-workout .buttons button {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--workout-accent);
 }
 
 body.phase-workout .buttons button:hover {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 body.phase-rest .buttons button {
   background: #ffffff;
-  color: var(--rest-text);
+  color: var(--workout-accent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
 body.phase-rest .buttons button:hover {
-  background: #f8fafc;
+  background: #fafafa;
 }
 
 @media (max-width: 480px) {
