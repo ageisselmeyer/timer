@@ -53,8 +53,7 @@ body {
   position: fixed;
   inset: 0;
   box-sizing: border-box;
-  display: grid;
-  place-items: center;
+  display: block;
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   /* Default matches index.html phase-workout; rest overrides. */
   color: var(--workout-body-text);
@@ -87,8 +86,12 @@ body.phase-rest {
     transparent 100%
   );
   --dot-ring-mask: linear-gradient(#fff, #fff);
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate3d(-50%, -50%, 0);
   width: min(440px, 100%);
+  max-width: 100%;
   display: grid;
   gap: 18px;
   /* stretch rows full width; center .timer explicitly (center + shrink-wrap mis-centers .controls) */
@@ -149,9 +152,8 @@ body.phase-rest .app::before {
   position: relative;
   display: grid;
   place-items: center;
-  /* Limit style/layout invalidation to the timer subtree when the ring updates. */
-  contain: layout style;
-  /* Keep ring/ticks compositing scoped to reduce blend cost with sibling layers. */
+  /* Paint containment only — layout containment was shifting intrinsic size on iOS cold start. */
+  contain: paint;
   isolation: isolate;
 }
 
@@ -224,8 +226,20 @@ body.phase-rest .app::before {
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
   user-select: none;
   transition: color 160ms linear;
+}
+
+@supports (container-type: size) {
+  .timer {
+    container-type: size;
+  }
+
+  .center {
+    /* Size from the ring box, not the visual viewport — avoids iOS vw reflow. */
+    font-size: clamp(56px, 40cqmin, 74px);
+  }
 }
 
 .meta {
@@ -468,6 +482,12 @@ body.phase-rest .buttons button:hover {
 
   .center {
     font-size: clamp(52px, 20vw, 72px);
+  }
+
+  @supports (container-type: size) {
+    .center {
+      font-size: clamp(52px, 38cqmin, 72px);
+    }
   }
 
   .durations {
