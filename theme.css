@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   /* Page background for the workout phase; band color is the timer ring only. */
   --kettlebell-black: #1a1817;
   --browser-ui-kettlebell: var(--kettlebell-black);
@@ -22,6 +23,7 @@ html {
   max-width: 100%;
   min-height: 100%;
   min-height: -webkit-fill-available;
+  min-height: 100dvh;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
@@ -29,6 +31,7 @@ html {
 
 html:has(body.phase-rest) {
   background-color: var(--rest-page-bg);
+  color-scheme: light;
 }
 
 * {
@@ -36,34 +39,27 @@ html:has(body.phase-rest) {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Body inset by safe areas; html background (--browser-ui-kettlebell) fills the outer strips. */
+/* Body: inset 0 + safe-area padding avoids duplicate top/left rules and reduces iOS inset reflow. */
 body {
   margin: 0;
   width: 100%;
   max-width: 100%;
   min-height: 100%;
   min-height: -webkit-fill-available;
+  min-height: 100dvh;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
   position: fixed;
-  top: constant(safe-area-inset-top);
-  right: constant(safe-area-inset-right);
-  bottom: constant(safe-area-inset-bottom);
-  left: constant(safe-area-inset-left);
-  top: env(safe-area-inset-top, 0px);
-  right: env(safe-area-inset-right, 0px);
-  bottom: env(safe-area-inset-bottom, 0px);
-  left: env(safe-area-inset-left, 0px);
+  inset: 0;
+  box-sizing: border-box;
   display: grid;
   place-items: center;
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   /* Default matches index.html phase-workout; rest overrides. */
   color: var(--workout-body-text);
-  padding: 16px;
-  box-sizing: border-box;
-  /* No background transition: interpolating black → band color can flash greenish mid-tones. */
-  transition: color 0.35s ease;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
 }
 
 body.phase-workout {

@@ -17,9 +17,6 @@ const restPlus = document.getElementById("restPlus");
 const PHASE_WORKOUT = "workout";
 const PHASE_REST = "rest";
 const MIN_DURATION_SEC = 5;
-/** Black until first paint after load; then one random palette entry (refresh only). */
-const WORKOUT_BOOT_PLACEHOLDER_HEX = "#000000";
-
 const WORKOUT_BAND_PALETTE = [
   "#ff69b4",
   "#2187f3",
@@ -120,15 +117,6 @@ function applyWorkoutThemeFromHex(hex, knownIndex = null) {
   root.style.setProperty("--workout-stepper-bg", `rgba(${r},${g},${b},0.2)`);
   root.style.setProperty("--workout-stepper-active", `rgba(${r},${g},${b},0.34)`);
   syncBrowserChrome();
-}
-
-function scheduleWorkoutThemeReveal(applyReal) {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      applyReal();
-      updateUI();
-    });
-  });
 }
 
 function getInputValue(input, fallback) {
@@ -473,10 +461,7 @@ restMinus.addEventListener("click", () => stepDuration(restInput, -5));
 restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
 const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
-applyWorkoutThemeFromHex(WORKOUT_BOOT_PLACEHOLDER_HEX);
+applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
 updateUI();
 updateStartButton();
 updateDurationControlsLock();
-scheduleWorkoutThemeReveal(() => {
-  applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
-});

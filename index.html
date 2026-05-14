@@ -2,6 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- First-paint shell before theme.css (avoids white PWA flash on cold start). -->
+  <style>
+    html {
+      background-color: #1a1817;
+      color-scheme: dark;
+    }
+  </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#1a1817" />
   <meta name="description" content="A simple workout and rest interval timer." />
