@@ -2,14 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- First-paint shell before theme.css (avoids white PWA flash on cold start). -->
+  <!-- Paint kettlebell black before theme.css + first layout (iOS PWA often flashes white otherwise). -->
   <style>
     html {
       background-color: #1a1817;
       color-scheme: dark;
+      min-height: 100%;
+      min-height: -webkit-fill-available;
+    }
+    body {
+      margin: 0;
+      background-color: #1a1817;
+      min-height: 100%;
+      min-height: -webkit-fill-available;
+    }
+    main.app {
+      background-color: #1a1817;
     }
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#1a1817" />
   <meta name="description" content="A simple workout and rest interval timer." />
   <meta name="application-name" content="Workout Timer" />
