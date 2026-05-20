@@ -2,14 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <script>
-    (function () {
-      if (window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches) {
-        document.documentElement.classList.add("is-standalone");
-      }
-    })();
-  </script>
-  <!-- Kettlebell paint + PWA bottom inset (layout shell stays in theme.css — no flex/position churn). -->
+  <!-- Paint kettlebell black before theme.css + first layout (iOS PWA often flashes white otherwise). -->
   <style>
     html {
       background-color: #1a1817;
@@ -22,14 +15,6 @@
       background-color: #1a1817;
       min-height: 100%;
       min-height: -webkit-fill-available;
-    }
-    html.is-standalone body {
-      padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
-    }
-    @media (display-mode: standalone) {
-      body {
-        padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
-      }
     }
     main.app {
       background-color: #1a1817;

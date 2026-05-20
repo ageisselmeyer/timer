@@ -38,6 +38,7 @@ html:has(body.phase-rest) {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* inset:0 + flex: center respects asymmetric safe-area padding (absolute 50% does not). */
 body {
   margin: 0;
   width: 100%;
@@ -50,19 +51,18 @@ body {
   position: fixed;
   inset: 0;
   box-sizing: border-box;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--workout-body-text);
   padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
     calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
 }
 
-/* iOS PWA: env(bottom) is often 0 — reserve home-indicator padding from the first frame. */
-html.is-standalone body {
-  padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
-}
-
-@media (display-mode: standalone) {
+/* Home-screen app: env(bottom) is often 0 — reserve indicator space on frame 1 (no late reflow). */
+@media (display-mode: standalone), (display-mode: fullscreen) {
   body {
     padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
   }
@@ -93,10 +93,9 @@ body.phase-rest {
     transparent 100%
   );
   --dot-ring-mask: linear-gradient(#fff, #fff);
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate3d(-50%, -50%, 0);
+  position: relative;
+  flex-shrink: 0;
+  margin: 0;
   width: min(440px, 100%);
   max-width: 100%;
   display: grid;
@@ -112,25 +111,6 @@ body.phase-workout .app {
 
 body.phase-rest .app {
   background: var(--rest-page-bg);
-}
-
-/* Absolute 50% ignores padding — nudge down when bottom inset is missing (iOS PWA). */
-html.is-standalone .app {
-  transform: translate3d(
-    -50%,
-    calc(-50% + (env(safe-area-inset-top, 0px) - max(34px, env(safe-area-inset-bottom, 0px))) / 2),
-    0
-  );
-}
-
-@media (display-mode: standalone) {
-  .app {
-    transform: translate3d(
-      -50%,
-      calc(-50% + (env(safe-area-inset-top, 0px) - max(34px, env(safe-area-inset-bottom, 0px))) / 2),
-      0
-    );
-  }
 }
 
 /* Invisible halo: same layer-promoting properties HEAD relied on (opacity < 1, mask-composite,
