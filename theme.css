@@ -21,8 +21,8 @@ html {
   background-color: var(--browser-ui-kettlebell);
   width: 100%;
   max-width: 100%;
-  height: 100%;
-  height: -webkit-fill-available;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
@@ -33,49 +33,38 @@ html:has(body.phase-rest) {
   color-scheme: light;
 }
 
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Flex center in the safe rectangle; safe-area on edges (not padding) so a late bottom inset
-   does not shrink only from the bottom and leave the timer shifted up. */
 body {
   margin: 0;
   width: 100%;
   max-width: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
   position: fixed;
-  top: constant(safe-area-inset-top, 0px);
-  top: env(safe-area-inset-top, 0px);
-  right: constant(safe-area-inset-right, 0px);
-  right: env(safe-area-inset-right, 0px);
-  bottom: constant(safe-area-inset-bottom, 0px);
-  bottom: env(safe-area-inset-bottom, 0px);
-  left: constant(safe-area-inset-left, 0px);
-  left: env(safe-area-inset-left, 0px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  inset: 0;
+  box-sizing: border-box;
+  display: block;
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  /* Default matches index.html phase-workout; rest overrides. */
   color: var(--workout-body-text);
+  padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
 }
 
-/* iOS home-screen: env(bottom) is often 0 on first layout — reserve indicator space immediately. */
+/* iOS PWA: env(bottom) is often 0 — reserve home-indicator padding from the first frame. */
 html.is-standalone body {
-  bottom: max(34px, env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
 }
 
 @media (display-mode: standalone) {
   body {
-    bottom: max(34px, env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
   }
 }
 
@@ -104,9 +93,10 @@ body.phase-rest {
     transparent 100%
   );
   --dot-ring-mask: linear-gradient(#fff, #fff);
-  position: relative;
-  flex-shrink: 0;
-  margin: 0;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate3d(-50%, -50%, 0);
   width: min(440px, 100%);
   max-width: 100%;
   display: grid;
@@ -122,6 +112,25 @@ body.phase-workout .app {
 
 body.phase-rest .app {
   background: var(--rest-page-bg);
+}
+
+/* Absolute 50% ignores padding — nudge down when bottom inset is missing (iOS PWA). */
+html.is-standalone .app {
+  transform: translate3d(
+    -50%,
+    calc(-50% + (env(safe-area-inset-top, 0px) - max(34px, env(safe-area-inset-bottom, 0px))) / 2),
+    0
+  );
+}
+
+@media (display-mode: standalone) {
+  .app {
+    transform: translate3d(
+      -50%,
+      calc(-50% + (env(safe-area-inset-top, 0px) - max(34px, env(safe-area-inset-bottom, 0px))) / 2),
+      0
+    );
+  }
 }
 
 /* Invisible halo: same layer-promoting properties HEAD relied on (opacity < 1, mask-composite,

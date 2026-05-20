@@ -9,61 +9,29 @@
       }
     })();
   </script>
-  <!-- Must match theme.css shell exactly — avoids reflow when the stylesheet applies. -->
+  <!-- Kettlebell paint + PWA bottom inset (layout shell stays in theme.css — no flex/position churn). -->
   <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
     html {
       background-color: #1a1817;
       color-scheme: dark;
-      width: 100%;
-      max-width: 100%;
-      height: 100%;
-      height: -webkit-fill-available;
-      overflow: hidden;
-      overflow-x: hidden;
-      overscroll-behavior: none;
+      min-height: 100%;
+      min-height: -webkit-fill-available;
     }
     body {
       margin: 0;
-      width: 100%;
-      max-width: 100%;
       background-color: #1a1817;
-      position: fixed;
-      top: constant(safe-area-inset-top, 0px);
-      top: env(safe-area-inset-top, 0px);
-      right: constant(safe-area-inset-right, 0px);
-      right: env(safe-area-inset-right, 0px);
-      bottom: constant(safe-area-inset-bottom, 0px);
-      bottom: env(safe-area-inset-bottom, 0px);
-      left: constant(safe-area-inset-left, 0px);
-      left: env(safe-area-inset-left, 0px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      overflow: hidden;
-      overflow-x: hidden;
-      overscroll-behavior: none;
-      font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: #e8e8e8;
+      min-height: 100%;
+      min-height: -webkit-fill-available;
     }
     html.is-standalone body {
-      bottom: max(34px, env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
     }
     @media (display-mode: standalone) {
       body {
-        bottom: max(34px, env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
       }
     }
     main.app {
-      position: relative;
-      flex-shrink: 0;
-      margin: 0;
       background-color: #1a1817;
     }
   </style>
