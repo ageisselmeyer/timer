@@ -21,8 +21,8 @@ html {
   background-color: var(--browser-ui-kettlebell);
   width: 100%;
   max-width: 100%;
-  min-height: 100%;
-  min-height: -webkit-fill-available;
+  height: 100svh;
+  height: 100dvh;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
@@ -43,8 +43,8 @@ body {
   margin: 0;
   width: 100%;
   max-width: 100%;
-  min-height: 100%;
-  min-height: -webkit-fill-available;
+  height: 100svh;
+  height: 100dvh;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
@@ -75,6 +75,15 @@ body.phase-workout {
 body.phase-rest {
   background: var(--rest-page-bg);
   color: var(--workout-text-strong);
+}
+
+#app {
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+#app.ready {
+  opacity: 1;
 }
 
 .app {

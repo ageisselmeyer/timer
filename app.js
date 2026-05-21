@@ -1,3 +1,4 @@
+const appEl = document.getElementById("app");
 const timerEl = document.getElementById("timer");
 const ringProgressEl = document.getElementById("ringProgress");
 const RING_LEN = 2 * Math.PI * 44;
@@ -460,8 +461,18 @@ workoutPlus.addEventListener("click", () => stepDuration(workoutInput, 5));
 restMinus.addEventListener("click", () => stepDuration(restInput, -5));
 restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
+function revealApp() {
+  if (!appEl) return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      appEl.classList.add("ready");
+    });
+  });
+}
+
 const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
 applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
 updateUI();
 updateStartButton();
 updateDurationControlsLock();
+revealApp();

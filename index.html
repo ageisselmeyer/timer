@@ -7,17 +7,18 @@
     html {
       background-color: #1a1817;
       color-scheme: dark;
-      min-height: 100%;
-      min-height: -webkit-fill-available;
+      height: 100svh;
+      height: 100dvh;
     }
     body {
       margin: 0;
       background-color: #1a1817;
-      min-height: 100%;
-      min-height: -webkit-fill-available;
+      height: 100svh;
+      height: 100dvh;
     }
-    main.app {
+    #app {
       background-color: #1a1817;
+      opacity: 0;
     }
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -36,7 +37,7 @@
   <link rel="stylesheet" href="theme.css" />
 </head>
 <body class="phase-workout">
-  <main class="app">
+  <main id="app" class="app">
     <section id="timer" class="timer workout">
       <div class="ring" id="ring">
         <svg class="ring-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
