@@ -424,6 +424,8 @@ function toggleStartPause() {
   }
 }
 
+let viewportStabilized = false;
+
 function setViewportHeight() {
   const vh = window.visualViewport
     ? window.visualViewport.height
@@ -432,7 +434,12 @@ function setViewportHeight() {
   document.documentElement.style.height = `${vh}px`;
 }
 
+/** Hide #app, wait for iOS layout to settle, apply final height, then show UI instantly. */
 async function stabilizeViewport() {
+  if (!viewportStabilized) {
+    appEl?.classList.remove("ready");
+  }
+
   setViewportHeight();
 
   await new Promise(requestAnimationFrame);
@@ -445,10 +452,15 @@ async function stabilizeViewport() {
   setViewportHeight();
 
   appEl?.classList.add("ready");
+  viewportStabilized = true;
 }
 
 window.addEventListener("pageshow", () => {
-  void stabilizeViewport();
+  if (!viewportStabilized) {
+    void stabilizeViewport();
+  } else {
+    setViewportHeight();
+  }
 
   if (running) {
     void acquireWakeLock();

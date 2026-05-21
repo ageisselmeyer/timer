@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Paint kettlebell black before theme.css + first layout (iOS PWA often flashes white otherwise). -->
+  <!-- Kettlebell shell visible immediately; #app stays hidden until JS adds .ready (no fade). -->
   <style>
     html {
       background-color: #1a1817;
@@ -19,8 +19,7 @@
       overflow: hidden;
     }
     #app {
-      background-color: #1a1817;
-      opacity: 0;
+      visibility: hidden;
     }
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
