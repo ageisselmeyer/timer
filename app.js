@@ -424,42 +424,57 @@ function toggleStartPause() {
   }
 }
 
-let viewportStabilized = false;
+let viewportLocked = false;
+/** px height applied to html/body for the rest of the session (no resize churn). */
+let lockedViewportHeightPx = null;
 
-function setViewportHeight() {
-  const vh = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
-
-  document.documentElement.style.height = `${vh}px`;
+function readViewportHeight() {
+  return window.visualViewport?.height ?? window.innerHeight;
 }
 
-/** Hide #app, wait for iOS layout to settle, apply final height, then show UI instantly. */
+function applyViewportHeight(px) {
+  const height = `${px}px`;
+  document.documentElement.style.height = height;
+  document.body.style.height = height;
+}
+
+function lockViewportHeight(px) {
+  lockedViewportHeightPx = px;
+  applyViewportHeight(px);
+}
+
+/** Kettlebell shell stays visible; #app hidden until height is locked, then fades in. */
 async function stabilizeViewport() {
-  if (!viewportStabilized) {
-    appEl?.classList.remove("ready");
+  if (viewportLocked) {
+    if (lockedViewportHeightPx !== null) applyViewportHeight(lockedViewportHeightPx);
+    return;
   }
 
-  setViewportHeight();
+  appEl?.classList.remove("ready");
+
+  applyViewportHeight(readViewportHeight());
 
   await new Promise(requestAnimationFrame);
   await new Promise(requestAnimationFrame);
 
-  setViewportHeight();
+  applyViewportHeight(readViewportHeight());
 
   await new Promise((resolve) => setTimeout(resolve, 80));
 
-  setViewportHeight();
+  lockViewportHeight(readViewportHeight());
+
+  // Layout once at the locked size before fade-in.
+  appEl?.offsetHeight;
 
   appEl?.classList.add("ready");
-  viewportStabilized = true;
+  viewportLocked = true;
 }
 
 window.addEventListener("pageshow", () => {
-  if (!viewportStabilized) {
+  if (!viewportLocked) {
     void stabilizeViewport();
-  } else {
-    setViewportHeight();
+  } else if (lockedViewportHeightPx !== null) {
+    applyViewportHeight(lockedViewportHeightPx);
   }
 
   if (running) {
@@ -472,7 +487,8 @@ window.addEventListener("pageshow", () => {
 });
 
 window.visualViewport?.addEventListener("resize", () => {
-  requestAnimationFrame(setViewportHeight);
+  if (viewportLocked) return;
+  requestAnimationFrame(() => applyViewportHeight(readViewportHeight()));
 });
 
 document.addEventListener("visibilitychange", () => {

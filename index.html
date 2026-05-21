@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Kettlebell shell visible immediately; #app stays hidden until JS adds .ready (no fade). -->
+  <!-- Kettlebell shell visible immediately; #app hidden until viewport lock + fade-in. -->
   <style>
     html {
       background-color: #1a1817;
@@ -20,6 +20,7 @@
     }
     #app {
       visibility: hidden;
+      opacity: 0;
     }
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
