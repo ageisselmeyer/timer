@@ -424,7 +424,32 @@ function toggleStartPause() {
   }
 }
 
+function setViewportHeight() {
+  const vh = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  document.documentElement.style.setProperty("--app-height", `${vh}px`);
+}
+
+async function stabilizeViewport() {
+  setViewportHeight();
+
+  await new Promise(requestAnimationFrame);
+  await new Promise(requestAnimationFrame);
+
+  setViewportHeight();
+
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  setViewportHeight();
+
+  appEl?.classList.add("ready");
+}
+
 window.addEventListener("pageshow", () => {
+  void stabilizeViewport();
+
   if (running) {
     void acquireWakeLock();
     if (audioCtx) void audioCtx.resume();
@@ -432,6 +457,10 @@ window.addEventListener("pageshow", () => {
     clearScheduler();
     scheduleNextTick();
   }
+});
+
+window.visualViewport?.addEventListener("resize", () => {
+  requestAnimationFrame(setViewportHeight);
 });
 
 document.addEventListener("visibilitychange", () => {
@@ -461,18 +490,9 @@ workoutPlus.addEventListener("click", () => stepDuration(workoutInput, 5));
 restMinus.addEventListener("click", () => stepDuration(restInput, -5));
 restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
-function revealApp() {
-  if (!appEl) return;
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      appEl.classList.add("ready");
-    });
-  });
-}
-
 const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
 applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
 updateUI();
 updateStartButton();
 updateDurationControlsLock();
-revealApp();
+void stabilizeViewport();

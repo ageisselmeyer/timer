@@ -15,14 +15,16 @@
   --rest-page-bg: var(--workout-inner);
   /* Opaque grey = same RGB as 48% white on kettlebell; workout track + rest progress (no tint over band). */
   --timer-track-gray: color-mix(in srgb, #ffffff 48%, var(--kettlebell-black));
+  /* Overwritten by JS from visualViewport before #app is shown. */
+  --app-height: 100svh;
+  --app-height: 100dvh;
 }
 
 html {
   background-color: var(--browser-ui-kettlebell);
   width: 100%;
   max-width: 100%;
-  height: 100svh;
-  height: 100dvh;
+  height: var(--app-height);
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
@@ -43,8 +45,7 @@ body {
   margin: 0;
   width: 100%;
   max-width: 100%;
-  height: 100svh;
-  height: 100dvh;
+  height: var(--app-height);
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
