@@ -40,7 +40,7 @@ html:has(body.phase-rest) {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* inset:0 + flex: center respects asymmetric safe-area padding (absolute 50% does not). */
+/* Grid centering only — no top:50% / translateY(-50%) (respects safe-area padding). */
 body {
   margin: 0;
   width: 100%;
@@ -52,10 +52,8 @@ body {
   position: fixed;
   inset: 0;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--workout-body-text);
   padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
@@ -80,7 +78,7 @@ body.phase-rest {
 
 #app {
   opacity: 0;
-  transition: opacity 120ms linear;
+  transition: opacity 500ms linear;
 }
 
 #app.ready {
@@ -104,7 +102,6 @@ body.phase-rest {
   );
   --dot-ring-mask: linear-gradient(#fff, #fff);
   position: relative;
-  flex-shrink: 0;
   margin: 0;
   width: min(440px, 100%);
   max-width: 100%;
