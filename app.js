@@ -429,7 +429,7 @@ function setViewportHeight() {
     ? window.visualViewport.height
     : window.innerHeight;
 
-  document.documentElement.style.setProperty("--app-height", `${vh}px`);
+  document.documentElement.style.height = `${vh}px`;
 }
 
 async function stabilizeViewport() {
