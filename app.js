@@ -475,7 +475,7 @@ async function waitForStableViewportHeight() {
   return Math.round(readViewportHeight());
 }
 
-/** Kettlebell shell visible; lock only after viewport settles, then fade in #app. */
+/** Kettlebell black background visible; lock only after viewport settles, then fade in #app. */
 async function stabilizeViewport() {
   if (viewportLocked) {
     if (lockedViewportHeightPx !== null) applyLockedViewportHeight(lockedViewportHeightPx);
@@ -484,19 +484,9 @@ async function stabilizeViewport() {
 
   appEl?.classList.remove("ready");
 
-  await new Promise(requestAnimationFrame);
-  await new Promise(requestAnimationFrame);
-  await delay(80);
-
-  const heightPx = await waitForStableViewportHeight();
-  lockViewportHeight(heightPx);
-
-  await new Promise(requestAnimationFrame);
-  await new Promise(requestAnimationFrame);
-  await delay(32);
+  lockViewportHeight(await waitForStableViewportHeight());
 
   appEl?.offsetHeight;
-
   appEl?.classList.add("ready");
   viewportLocked = true;
 }
@@ -505,7 +495,7 @@ window.addEventListener("pageshow", () => {
   if (!viewportLocked) {
     void stabilizeViewport();
   } else if (lockedViewportHeightPx !== null) {
-    applyViewportHeight(lockedViewportHeightPx);
+    applyLockedViewportHeight(lockedViewportHeightPx);
   }
 
   if (running) {
@@ -515,13 +505,6 @@ window.addEventListener("pageshow", () => {
     clearScheduler();
     scheduleNextTick();
   }
-});
-
-window.visualViewport?.addEventListener("resize", () => {
-  if (viewportLocked) return;
-  requestAnimationFrame(() => {
-    document.documentElement.style.height = `${Math.round(readViewportHeight())}px`;
-  });
 });
 
 document.addEventListener("visibilitychange", () => {
