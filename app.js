@@ -425,45 +425,76 @@ function toggleStartPause() {
 }
 
 let viewportLocked = false;
-/** px height applied to html/body for the rest of the session (no resize churn). */
+/** px height on <html> for the rest of the session (body fills via absolute inset). */
 let lockedViewportHeightPx = null;
+
+const VIEWPORT_STABLE_FRAMES = 4;
+const VIEWPORT_STABLE_MAX_MS = 600;
+/** Extra wait after height stops changing before we lock (iOS second layout pass). */
+const VIEWPORT_POST_STABLE_MS = 120;
 
 function readViewportHeight() {
   return window.visualViewport?.height ?? window.innerHeight;
 }
 
-function applyViewportHeight(px) {
-  const height = `${px}px`;
-  document.documentElement.style.height = height;
-  document.body.style.height = height;
+function applyLockedViewportHeight(px) {
+  document.documentElement.style.height = `${px}px`;
+  document.body.style.height = "";
 }
 
 function lockViewportHeight(px) {
   lockedViewportHeightPx = px;
-  applyViewportHeight(px);
+  applyLockedViewportHeight(px);
 }
 
-/** Kettlebell shell stays visible; #app hidden until height is locked, then fades in. */
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Wait until visualViewport height is unchanged for several frames. */
+async function waitForStableViewportHeight() {
+  const start = performance.now();
+  let last = -1;
+  let stableFrames = 0;
+
+  while (performance.now() - start < VIEWPORT_STABLE_MAX_MS) {
+    await new Promise(requestAnimationFrame);
+    const h = Math.round(readViewportHeight());
+    if (h === last) {
+      stableFrames += 1;
+      if (stableFrames >= VIEWPORT_STABLE_FRAMES) {
+        await delay(VIEWPORT_POST_STABLE_MS);
+        return Math.round(readViewportHeight());
+      }
+    } else {
+      last = h;
+      stableFrames = 1;
+    }
+  }
+
+  return Math.round(readViewportHeight());
+}
+
+/** Kettlebell shell visible; lock only after viewport settles, then fade in #app. */
 async function stabilizeViewport() {
   if (viewportLocked) {
-    if (lockedViewportHeightPx !== null) applyViewportHeight(lockedViewportHeightPx);
+    if (lockedViewportHeightPx !== null) applyLockedViewportHeight(lockedViewportHeightPx);
     return;
   }
 
   appEl?.classList.remove("ready");
 
-  applyViewportHeight(readViewportHeight());
+  await new Promise(requestAnimationFrame);
+  await new Promise(requestAnimationFrame);
+  await delay(80);
+
+  const heightPx = await waitForStableViewportHeight();
+  lockViewportHeight(heightPx);
 
   await new Promise(requestAnimationFrame);
   await new Promise(requestAnimationFrame);
+  await delay(32);
 
-  applyViewportHeight(readViewportHeight());
-
-  await new Promise((resolve) => setTimeout(resolve, 80));
-
-  lockViewportHeight(readViewportHeight());
-
-  // Layout once at the locked size before fade-in.
   appEl?.offsetHeight;
 
   appEl?.classList.add("ready");
@@ -488,7 +519,9 @@ window.addEventListener("pageshow", () => {
 
 window.visualViewport?.addEventListener("resize", () => {
   if (viewportLocked) return;
-  requestAnimationFrame(() => applyViewportHeight(readViewportHeight()));
+  requestAnimationFrame(() => {
+    document.documentElement.style.height = `${Math.round(readViewportHeight())}px`;
+  });
 });
 
 document.addEventListener("visibilitychange", () => {
