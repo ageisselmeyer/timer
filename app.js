@@ -129,7 +129,7 @@ function getInputValue(input, fallback) {
 const HIDDEN_TICK_MS = 1000;
 
 let phase = PHASE_WORKOUT;
-let phaseDuration = getInputValue(workoutInput, 40);
+let phaseDuration = getInputValue(workoutInput, 30);
 let remaining = phaseDuration;
 let running = false;
 let timerTickId = null;
@@ -201,7 +201,7 @@ function applyDurationInputChange(input) {
 
 function stepDuration(input, delta) {
   if (hasStarted) return;
-  const fallback = input === workoutInput ? 40 : 20;
+  const fallback = 30;
   let next = getInputValue(input, fallback) + delta;
   if (next < MIN_DURATION_SEC) next = MIN_DURATION_SEC;
   input.value = String(next);
@@ -266,8 +266,8 @@ function beep(duration, frequency, gain, fadeOut) {
 function setPhase(nextPhase) {
   phase = nextPhase;
   phaseDuration = phase === PHASE_WORKOUT
-    ? getInputValue(workoutInput, 40)
-    : getInputValue(restInput, 20);
+    ? getInputValue(workoutInput, 30)
+    : getInputValue(restInput, 30);
   remaining = phaseDuration;
   beepedSecond = null;
   updateUI();
