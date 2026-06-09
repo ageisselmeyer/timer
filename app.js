@@ -395,7 +395,6 @@ function pauseTimer() {
   if (!running) return;
   remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
   running = false;
-  void releaseWakeLock();
   clearScheduler();
   lastRingDashKey = null;
   syncRingFromRemaining();
@@ -411,6 +410,7 @@ function pauseTimer() {
 function resetTimer() {
   pauseTimer();
   hasStarted = false;
+  void releaseWakeLock();
   setPhase(PHASE_WORKOUT);
   updateStartButton();
   updateDurationControlsLock();
@@ -498,8 +498,10 @@ window.addEventListener("pageshow", () => {
     applyLockedViewportHeight(lockedViewportHeightPx);
   }
 
-  if (running) {
+  if (hasStarted) {
     void acquireWakeLock();
+  }
+  if (running) {
     if (audioCtx) void audioCtx.resume();
     remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
     clearScheduler();
@@ -509,17 +511,23 @@ window.addEventListener("pageshow", () => {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    if (running) {
+    if (hasStarted) {
       void acquireWakeLock();
+    }
+    if (running) {
       if (audioCtx) void audioCtx.resume();
       remaining = Math.max(0, (endTimeMs - performance.now()) / 1000);
       clearScheduler();
       scheduleNextTick();
     }
-  } else if (running) {
-    void releaseWakeLock();
-    clearScheduler();
-    scheduleNextTick();
+  } else {
+    if (hasStarted) {
+      void releaseWakeLock();
+    }
+    if (running) {
+      clearScheduler();
+      scheduleNextTick();
+    }
   }
 });
 
