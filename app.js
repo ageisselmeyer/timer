@@ -70,7 +70,7 @@ function blendHex(bg, fg, t) {
   );
 }
 
-const KETTLEBELL_PAGE_HEX = "#1a1817";
+const KETTLEBELL_PAGE_HEX = "#181818";
 
 function syncBrowserChrome() {
   document.documentElement.style.setProperty("--browser-ui-kettlebell", KETTLEBELL_PAGE_HEX);

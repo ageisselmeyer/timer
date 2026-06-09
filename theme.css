@@ -1,7 +1,7 @@
 :root {
   color-scheme: dark;
   /* Page background for the workout phase; band color is the timer ring only. */
-  --kettlebell-black: #1a1817;
+  --kettlebell-black: #181818;
   --browser-ui-kettlebell: var(--kettlebell-black);
   --workout-accent: #000000;
   --workout-accent-rgb: 0 0 0;
