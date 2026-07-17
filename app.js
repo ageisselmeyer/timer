@@ -50,26 +50,6 @@ function hexToRgb(hex) {
   };
 }
 
-function rgbToHex(r, g, b) {
-  return `#${[r, g, b]
-    .map((x) => {
-      const n = Math.round(Math.max(0, Math.min(255, x)));
-      const s = n.toString(16);
-      return s.length === 1 ? `0${s}` : s;
-    })
-    .join("")}`;
-}
-
-function blendHex(bg, fg, t) {
-  const A = hexToRgb(bg);
-  const B = hexToRgb(fg);
-  return rgbToHex(
-    A.r + (B.r - A.r) * t,
-    A.g + (B.g - A.g) * t,
-    A.b + (B.b - A.b) * t
-  );
-}
-
 const KETTLEBELL_PAGE_HEX = "#181818";
 
 function syncBrowserChrome() {
@@ -111,7 +91,6 @@ function applyWorkoutThemeFromHex(hex, knownIndex = null) {
   const root = document.documentElement;
   root.style.setProperty("--workout-accent", canonical);
   root.style.setProperty("--workout-accent-rgb", `${r} ${g} ${b}`);
-  root.style.setProperty("--workout-text-strong", blendHex("#ffffff", canonical, 0.18));
   root.style.setProperty("--workout-stepper-bg", `rgba(${r},${g},${b},0.2)`);
   root.style.setProperty("--workout-stepper-active", `rgba(${r},${g},${b},0.34)`);
   syncBrowserChrome();

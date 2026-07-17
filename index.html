@@ -81,22 +81,22 @@
 
     <nav class="bottom-bar" aria-label="Timer controls">
       <div class="durations">
-        <label>
-          Workout (sec)
+        <div class="duration-field">
+          <label for="workoutInput">Workout (sec)</label>
           <div class="field-stepper">
             <button type="button" class="stepper-btn" id="workoutMinus" aria-label="Decrease workout by 5 seconds">−</button>
             <input id="workoutInput" type="number" min="5" value="30" inputmode="numeric" />
             <button type="button" class="stepper-btn" id="workoutPlus" aria-label="Increase workout by 5 seconds">+</button>
           </div>
-        </label>
-        <label>
-          Rest (sec)
+        </div>
+        <div class="duration-field">
+          <label for="restInput">Rest (sec)</label>
           <div class="field-stepper">
             <button type="button" class="stepper-btn" id="restMinus" aria-label="Decrease rest by 5 seconds">−</button>
             <input id="restInput" type="number" min="5" value="30" inputmode="numeric" />
             <button type="button" class="stepper-btn" id="restPlus" aria-label="Increase rest by 5 seconds">+</button>
           </div>
-        </label>
+        </div>
       </div>
       <div class="buttons">
         <button id="startBtn" type="button">Start</button>

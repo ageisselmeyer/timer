@@ -4,7 +4,7 @@
   --page-bg: var(--kettlebell-black);
   --workout-accent: #2187f3;
   --workout-accent-rgb: 33 135 243;
-  --workout-text-strong: #fafafa;
+  --workout-text-strong: #ffffff;
   --chrome-ink: #fafafa;
   --chrome-ink-soft: rgba(255, 255, 255, 0.88);
   --chrome-surface: rgba(255, 255, 255, 0.06);
@@ -220,7 +220,7 @@ html.standalone .app {
 }
 
 .timer {
-  width: min(360px, 88vw);
+  width: min(380px, 90vw);
   max-width: 100%;
   aspect-ratio: 1 / 1;
   position: relative;
@@ -332,11 +332,14 @@ html.standalone .app {
   gap: 12px;
 }
 
-.durations > label {
+.durations > .duration-field {
   display: grid;
   gap: 8px;
   justify-items: center;
   text-align: center;
+}
+
+.durations > .duration-field > label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -344,7 +347,7 @@ html.standalone .app {
   color: rgba(255, 255, 255, 0.55);
 }
 
-.durations > label .field-stepper {
+.durations > .duration-field .field-stepper {
   width: 100%;
 }
 
@@ -445,8 +448,8 @@ body:not(.has-started) #resetBtn {
 
 #startBtn {
   background: var(--workout-accent);
-  color: #181818;
-  -webkit-text-fill-color: #181818;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
 }
 
 #startBtn:active {
@@ -495,7 +498,7 @@ body.phase-rest .timer.workout {
 
 @media (max-width: 480px) {
   .timer {
-    width: min(320px, 86vw);
+    width: min(340px, 88vw);
   }
 
   .center {
