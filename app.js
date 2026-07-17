@@ -562,7 +562,7 @@ workoutPlus.addEventListener("click", () => stepDuration(workoutInput, 5));
 restMinus.addEventListener("click", () => stepDuration(restInput, -5));
 restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
-const initialIdx = 8; // silver (testing)
+const initialIdx = 0;
 applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
 updateUI();
 updateStartButton();
