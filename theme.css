@@ -454,7 +454,7 @@ body:not(.has-started) #resetBtn {
   -webkit-text-fill-color: var(--start-btn-ink);
 }
 
-body.accent-metal #startBtn {
+body.accent-metal:not(.is-running) #startBtn {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
@@ -469,6 +469,7 @@ body.is-running #startBtn {
   color: var(--workout-text-strong);
   -webkit-text-fill-color: var(--workout-text-strong);
   filter: none;
+  box-shadow: none;
 }
 
 #resetBtn:active,
