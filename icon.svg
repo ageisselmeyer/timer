@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- App icon shell -->
   <rect width="512" height="512" rx="96" fill="#181818" />
-  <!-- Green progress: from 12 o'clock clockwise to ~4:30 (~135°) -->
+  <!-- Blue progress: from 12 o'clock clockwise to ~4:30 (~135°) -->
   <circle
     cx="256"
     cy="256"
     r="150"
     fill="none"
-    stroke="#2c9323"
+    stroke="#2187f3"
     stroke-width="54"
     stroke-linecap="butt"
     transform="rotate(-90 256 256)"

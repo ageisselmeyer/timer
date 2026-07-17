@@ -4,6 +4,8 @@
   --page-bg: var(--kettlebell-black);
   --workout-accent: #2187f3;
   --workout-accent-rgb: 33 135 243;
+  --start-btn-ink: #ffffff;
+  --start-btn-bg: var(--workout-accent);
   --workout-text-strong: #ffffff;
   --chrome-ink: #fafafa;
   --chrome-ink-soft: rgba(255, 255, 255, 0.88);
@@ -447,9 +449,13 @@ body:not(.has-started) #resetBtn {
 }
 
 #startBtn {
-  background: var(--workout-accent);
-  color: #ffffff;
-  -webkit-text-fill-color: #ffffff;
+  background: var(--start-btn-bg);
+  color: var(--start-btn-ink);
+  -webkit-text-fill-color: var(--start-btn-ink);
+}
+
+body.accent-metal #startBtn {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 #startBtn:active {
@@ -484,14 +490,6 @@ body.has-started .field-stepper input[type="number"]:disabled {
 .workout {
   --fill-color: var(--workout-accent);
   --track-color: var(--kettlebell-black);
-  --inner-color: var(--kettlebell-black);
-  --tick: rgba(255, 255, 255, 0.96);
-}
-
-/* Rest: full ring = accent; shrinking arc = kettlebell black. */
-body.phase-rest .timer.workout {
-  --fill-color: var(--kettlebell-black);
-  --track-color: var(--workout-accent);
   --inner-color: var(--kettlebell-black);
   --tick: rgba(255, 255, 255, 0.96);
 }

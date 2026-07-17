@@ -19,14 +19,27 @@ const PHASE_WORKOUT = "workout";
 const PHASE_REST = "rest";
 const MIN_DURATION_SEC = 5;
 const WORKOUT_BAND_PALETTE = [
-  "#ff69b4",
-  "#2187f3",
-  "#ffcb00",
-  "#9d84cb",
-  "#2c9323",
-  "#fd6f37",
-  "#ff0024",
+  "#2187f3", // blue
+  "#ffcb00", // yellow
+  "#9d84cb", // purple
+  "#2c9323", // green
+  "#fd6f37", // orange
+  "#ff0024", // red
+  "#9e9e9e", // grey
+  "#ffffff", // white
+  "#c5d0dc", // silver
+  "#d4a017", // gold
 ];
+const METAL_RING_STROKE = {
+  "#c5d0dc": "url(#metal-silver)",
+  "#d4a017": "url(#metal-gold)",
+};
+const METAL_START_BG = {
+  "#c5d0dc":
+    "linear-gradient(135deg, #6d7b88 0%, #f4f7fb 18%, #9eafbd 36%, #ffffff 50%, #7a8b99 68%, #e7eef5 84%, #a9b7c4 100%)",
+  "#d4a017":
+    "linear-gradient(135deg, #8a5a0e 0%, #ffe08a 18%, #d4a017 36%, #fff0b0 50%, #a06e10 68%, #ffcc3d 84%, #e0b01a 100%)",
+};
 let workoutPaletteIndex = null;
 
 function normalizeHex(hex) {
@@ -48,6 +61,11 @@ function hexToRgb(hex) {
     g: Number.parseInt(h.slice(2, 4), 16),
     b: Number.parseInt(h.slice(4, 6), 16),
   };
+}
+
+function relativeLuminance(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
 
 const KETTLEBELL_PAGE_HEX = "#181818";
@@ -72,15 +90,12 @@ function syncBrowserChrome() {
   upsertThemeColor("(prefers-color-scheme: dark)");
 }
 
-function pickRandomWorkoutIndex(excludeIdx) {
+function nextWorkoutIndex(currentIdx) {
   const n = WORKOUT_BAND_PALETTE.length;
-  if (!Number.isInteger(excludeIdx) || excludeIdx < 0 || excludeIdx >= n) {
-    return Math.floor(Math.random() * n);
+  if (!Number.isInteger(currentIdx) || currentIdx < 0 || currentIdx >= n) {
+    return 0;
   }
-  if (n <= 1) return 0;
-  let j = Math.floor(Math.random() * (n - 1));
-  if (j >= excludeIdx) j += 1;
-  return j;
+  return (currentIdx + 1) % n;
 }
 
 function applyWorkoutThemeFromHex(hex, knownIndex = null) {
@@ -88,11 +103,27 @@ function applyWorkoutThemeFromHex(hex, knownIndex = null) {
   const { r, g, b } = hexToRgb(canonical);
   const idx = Number.isInteger(knownIndex) ? knownIndex : WORKOUT_BAND_PALETTE.indexOf(canonical);
   workoutPaletteIndex = idx >= 0 ? idx : workoutPaletteIndex;
+  const startInk = relativeLuminance(canonical) > 0.62 ? "#181818" : "#ffffff";
+  const metalStroke = METAL_RING_STROKE[canonical];
+  const metalStartBg = METAL_START_BG[canonical];
   const root = document.documentElement;
   root.style.setProperty("--workout-accent", canonical);
   root.style.setProperty("--workout-accent-rgb", `${r} ${g} ${b}`);
+  root.style.setProperty("--start-btn-ink", startInk);
   root.style.setProperty("--workout-stepper-bg", `rgba(${r},${g},${b},0.2)`);
   root.style.setProperty("--workout-stepper-active", `rgba(${r},${g},${b},0.34)`);
+  if (metalStartBg) {
+    root.style.setProperty("--start-btn-bg", metalStartBg);
+  } else {
+    root.style.setProperty("--start-btn-bg", canonical);
+  }
+  if (metalStroke) {
+    ringProgressEl.style.stroke = metalStroke;
+    document.body.classList.add("accent-metal");
+  } else {
+    ringProgressEl.style.removeProperty("stroke");
+    document.body.classList.remove("accent-metal");
+  }
   syncBrowserChrome();
 }
 
@@ -253,7 +284,7 @@ function setPhase(nextPhase) {
 function switchPhase() {
   const next = phase === PHASE_WORKOUT ? PHASE_REST : PHASE_WORKOUT;
   if (next === PHASE_WORKOUT) {
-    const nextIdx = pickRandomWorkoutIndex(workoutPaletteIndex);
+    const nextIdx = nextWorkoutIndex(workoutPaletteIndex);
     applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[nextIdx], nextIdx);
   }
   setPhase(next);
@@ -273,13 +304,24 @@ function syncPhaseChrome() {
 }
 
 function syncRingFromRemaining() {
-  const doneRatio = 1 - (remaining / phaseDuration);
-  const p = Math.max(0, Math.min(1, doneRatio));
-  const off = RING_LEN * (1 - p);
-  const key = off.toFixed(2);
+  const doneRatio = Math.max(0, Math.min(1, 1 - remaining / phaseDuration));
+  let dasharray;
+  let offset;
+  if (phase === PHASE_REST) {
+    // Remaining accent arc; leading edge advances clockwise from 12 (same direction as workout).
+    const remLen = RING_LEN * (1 - doneRatio);
+    dasharray = `${remLen} ${RING_LEN}`;
+    offset = -RING_LEN * doneRatio;
+  } else {
+    // Accent grows clockwise from 12 with elapsed time.
+    dasharray = `${RING_LEN} ${RING_LEN}`;
+    offset = RING_LEN * (1 - doneRatio);
+  }
+  const key = `${phase}:${dasharray}:${offset.toFixed(2)}`;
   if (key === lastRingDashKey) return;
   lastRingDashKey = key;
-  ringProgressEl.style.strokeDashoffset = key;
+  ringProgressEl.style.strokeDasharray = dasharray;
+  ringProgressEl.style.strokeDashoffset = String(offset);
 }
 
 function updateUI() {
@@ -388,6 +430,7 @@ function resetTimer() {
   pauseTimer();
   hasStarted = false;
   void releaseWakeLock();
+  applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[0], 0);
   setPhase(PHASE_WORKOUT);
   updateStartButton();
   updateDurationControlsLock();
@@ -519,7 +562,7 @@ workoutPlus.addEventListener("click", () => stepDuration(workoutInput, 5));
 restMinus.addEventListener("click", () => stepDuration(restInput, -5));
 restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
-const initialIdx = Math.floor(Math.random() * WORKOUT_BAND_PALETTE.length);
+const initialIdx = 8; // silver (testing)
 applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
 updateUI();
 updateStartButton();
