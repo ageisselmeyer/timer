@@ -212,10 +212,11 @@ html.standalone .app {
   z-index: 10;
   flex-shrink: 0;
   display: grid;
-  gap: 12px;
-  padding: 12px 16px calc(12px + var(--bottom-safe));
+  gap: 14px;
+  padding: 14px 16px calc(14px + var(--bottom-safe));
   margin-bottom: var(--bottom-bar-gap);
   background: var(--page-bg);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .timer {
@@ -328,19 +329,19 @@ html.standalone .app {
 .durations {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .durations > label {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   justify-items: center;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--workout-text-strong);
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .durations > label .field-stepper {
@@ -351,9 +352,9 @@ html.standalone .app {
   display: flex;
   align-items: stretch;
   width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--chrome-border);
-  background: var(--chrome-surface);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
   overflow: hidden;
 }
 
@@ -364,9 +365,11 @@ html.standalone .app {
   border: none;
   background: transparent;
   border-radius: 0;
-  padding: 10px 6px;
-  font-size: 16px;
+  padding: 12px 6px;
+  font-size: 20px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
   color: var(--workout-text-strong);
   -webkit-text-fill-color: var(--workout-text-strong);
   text-align: center;
@@ -383,17 +386,17 @@ html.standalone .app {
 
 .stepper-btn {
   flex: 0 0 auto;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 10px;
+  min-width: 48px;
+  min-height: 52px;
+  padding: 0 12px;
   border: none;
   border-radius: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  background: var(--workout-stepper-bg);
-  color: #ffffff;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
   touch-action: manipulation;
 }
 
@@ -415,29 +418,52 @@ body.has-started .field-stepper input[type="number"]:disabled {
 }
 
 .buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
+}
+
+body:not(.has-started) .buttons {
+  grid-template-columns: 1fr;
 }
 
 .buttons button {
-  border: 1px solid var(--chrome-border);
-  border-radius: 12px;
+  border: none;
+  border-radius: 14px;
   padding: 16px 14px;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  background: var(--chrome-surface);
-  color: var(--workout-accent);
-  min-width: 96px;
   min-height: 56px;
   touch-action: manipulation;
-  flex: 1 1 30%;
 }
 
-.buttons button:hover {
+body:not(.has-started) #resetBtn {
+  display: none;
+}
+
+#startBtn {
+  background: var(--workout-accent);
+  color: #181818;
+  -webkit-text-fill-color: #181818;
+}
+
+#startBtn:active {
+  filter: brightness(0.92);
+}
+
+#resetBtn,
+body.is-running #startBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--workout-text-strong);
+  -webkit-text-fill-color: var(--workout-text-strong);
+  filter: none;
+}
+
+#resetBtn:active,
+body.is-running #startBtn:active {
   background: rgba(255, 255, 255, 0.1);
 }
 

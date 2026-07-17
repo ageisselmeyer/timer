@@ -144,6 +144,7 @@ let hasStarted = false;
 
 function updateStartButton() {
   document.body.classList.toggle("has-started", hasStarted);
+  document.body.classList.toggle("is-running", running);
   if (!hasStarted) {
     startBtn.textContent = "Start";
   } else if (running) {
