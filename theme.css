@@ -1,38 +1,30 @@
 :root {
   color-scheme: dark;
-  /* Page background for the workout phase; band color is the timer ring only. */
   --kettlebell-black: #181818;
-  --browser-ui-kettlebell: var(--kettlebell-black);
-  --workout-accent: #000000;
-  --workout-accent-rgb: 0 0 0;
-  /* Constant light grey across palette swaps (timer inner disc). */
-  --workout-inner: #eef1f5;
-  --workout-body-text: #e8e8e8;
+  --page-bg: var(--kettlebell-black);
+  --workout-accent: #2187f3;
+  --workout-accent-rgb: 33 135 243;
   --workout-text-strong: #fafafa;
+  --chrome-ink: #fafafa;
+  --chrome-ink-soft: rgba(255, 255, 255, 0.88);
+  --chrome-surface: rgba(255, 255, 255, 0.06);
+  --chrome-surface-strong: rgba(255, 255, 255, 0.12);
+  --chrome-border: rgba(255, 255, 255, 0.14);
   --workout-stepper-bg: rgba(255, 255, 255, 0.12);
   --workout-stepper-active: rgba(255, 255, 255, 0.2);
-  /* Rest shell: same fill as timer inner disc; distinct from workout kettlebell. */
-  --rest-page-bg: var(--workout-inner);
-  /* Opaque grey = same RGB as 48% white on kettlebell; workout track + rest progress (no tint over band). */
-  --timer-track-gray: color-mix(in srgb, #ffffff 48%, var(--kettlebell-black));
+  /* Safari tab: space under buttons; no home-indicator floor. */
+  --bottom-bar-gap: 24px;
+  --bottom-safe: 0px;
 }
 
 html {
-  background-color: var(--browser-ui-kettlebell);
+  background-color: var(--page-bg);
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
-  max-width: 100%;
-  height: 100%;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
-}
-
-html:has(body.phase-rest) {
-  background-color: var(--rest-page-bg);
-  color-scheme: light;
 }
 
 * {
@@ -40,50 +32,24 @@ html:has(body.phase-rest) {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Grid centering only — no top:50% / translateY(-50%) (respects safe-area padding). */
 body {
   margin: 0;
-  position: absolute;
+  position: fixed;
   inset: 0;
   width: 100%;
   overflow: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
   box-sizing: border-box;
-  display: grid;
-  place-items: center;
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: var(--workout-body-text);
-  padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
-    calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
-}
-
-/* Home-screen app: env(bottom) is often 0 — reserve indicator space on frame 1 (no late reflow). */
-@media (display-mode: standalone), (display-mode: fullscreen) {
-  body {
-    padding-bottom: calc(16px + max(34px, env(safe-area-inset-bottom, 0px)));
-  }
-}
-
-body.phase-workout {
-  background: var(--kettlebell-black);
-}
-
-body.phase-rest {
-  background: var(--rest-page-bg);
-  color: var(--workout-text-strong);
-}
-
-/* Hidden until viewport is locked; then fade in (opacity only — no transform transition). */
-#app {
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 200ms linear;
-}
-
-#app.ready {
-  visibility: visible;
-  opacity: 1;
+  color: var(--chrome-ink);
+  background: var(--page-bg);
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
 }
 
 .app {
@@ -102,23 +68,19 @@ body.phase-rest {
     transparent 100%
   );
   --dot-ring-mask: linear-gradient(#fff, #fff);
-  position: relative;
-  margin: 0;
-  width: min(440px, 100%);
-  max-width: 100%;
-  display: grid;
-  gap: 18px;
-  /* stretch rows full width; center .timer explicitly (center + shrink-wrap mis-centers .controls) */
-  justify-items: stretch;
-  padding: 20px 20px 24px;
-}
-
-body.phase-workout .app {
-  background: var(--kettlebell-black);
-}
-
-body.phase-rest .app {
-  background: var(--rest-page-bg);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 200ms linear;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: min(98vw, 520px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--page-bg);
+  color: var(--chrome-ink);
 }
 
 /* Invisible halo: same layer-promoting properties HEAD relied on (opacity < 1, mask-composite,
@@ -158,15 +120,111 @@ body.phase-rest .app::before {
   opacity: 0.9;
 }
 
+/*
+ * Installed PWA: unfixed roots + home-indicator padding.
+ * Do not apply this shell to Safari tabs — content sits under the toolbar.
+ */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --bottom-bar-gap: 0px;
+    --bottom-safe: max(34px, env(safe-area-inset-bottom, 0px));
+  }
+
+  html {
+    position: static;
+    height: 100%;
+    width: auto;
+    inset: auto;
+  }
+
+  body {
+    position: static;
+    inset: auto;
+    width: auto;
+    height: 100%;
+    min-height: 100vh;
+  }
+
+  .app {
+    position: relative;
+    inset: auto;
+    height: 100%;
+    min-height: 100vh;
+  }
+}
+
+html.standalone {
+  --bottom-bar-gap: 0px;
+  --bottom-safe: max(34px, env(safe-area-inset-bottom, 0px));
+  position: static;
+  height: 100%;
+  width: auto;
+  inset: auto;
+}
+
+html.standalone body {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: 100%;
+  min-height: 100vh;
+}
+
+html.standalone .app {
+  position: relative;
+  inset: auto;
+  height: 100%;
+  min-height: 100vh;
+}
+
+#app.ready,
+.app.ready {
+  visibility: visible;
+  opacity: 1;
+}
+
+.app-header {
+  flex-shrink: 0;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 16px 8px;
+  text-align: center;
+}
+
+.app-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.timer-area {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px 16px;
+}
+
+.bottom-bar {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+  display: grid;
+  gap: 12px;
+  padding: 12px 16px calc(12px + var(--bottom-safe));
+  margin-bottom: var(--bottom-bar-gap);
+  background: var(--page-bg);
+}
+
 .timer {
-  width: min(380px, 100%);
+  width: min(360px, 88vw);
   max-width: 100%;
-  justify-self: center;
   aspect-ratio: 1 / 1;
   position: relative;
   display: grid;
   place-items: center;
-  /* Paint containment only — layout containment was shifting intrinsic size on iOS cold start. */
   contain: paint;
   isolation: isolate;
 }
@@ -242,6 +300,7 @@ body.phase-rest .app::before {
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   user-select: none;
+  color: var(--workout-text-strong);
   transition: color 160ms linear;
 }
 
@@ -251,27 +310,19 @@ body.phase-rest .app::before {
   }
 
   .center {
-    /* Size from the ring box, not the visual viewport — avoids iOS vw reflow. */
     font-size: clamp(56px, 40cqmin, 74px);
   }
 }
 
 .meta {
-  justify-self: center;
   width: 100%;
   text-align: center;
-  font-size: 13px;
-  letter-spacing: 0.12em;
-  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  font-weight: 800;
   text-transform: uppercase;
-  margin-top: -4px;
   min-height: 1em;
-}
-
-.controls {
-  width: 100%;
-  display: grid;
-  gap: 10px;
+  color: var(--workout-text-strong);
 }
 
 .durations {
@@ -289,6 +340,7 @@ body.phase-rest .app::before {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
+  color: var(--workout-text-strong);
 }
 
 .durations > label .field-stepper {
@@ -299,9 +351,9 @@ body.phase-rest .app::before {
   display: flex;
   align-items: stretch;
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 1px solid var(--chrome-border);
+  background: var(--chrome-surface);
   overflow: hidden;
 }
 
@@ -314,8 +366,9 @@ body.phase-rest .app::before {
   border-radius: 0;
   padding: 10px 6px;
   font-size: 16px;
-  font-weight: 600;
-  color: #1f2a40;
+  font-weight: 700;
+  color: var(--workout-text-strong);
+  -webkit-text-fill-color: var(--workout-text-strong);
   text-align: center;
   touch-action: manipulation;
   appearance: textfield;
@@ -339,13 +392,13 @@ body.phase-rest .app::before {
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  background: rgba(31, 42, 64, 0.08);
-  color: #1f2a40;
+  background: var(--workout-stepper-bg);
+  color: #ffffff;
   touch-action: manipulation;
 }
 
 .stepper-btn:active {
-  background: rgba(31, 42, 64, 0.14);
+  background: var(--workout-stepper-active);
 }
 
 .field-stepper input:disabled {
@@ -357,6 +410,10 @@ body.phase-rest .app::before {
   cursor: not-allowed;
 }
 
+body.has-started .field-stepper input[type="number"]:disabled {
+  opacity: 1;
+}
+
 .buttons {
   display: flex;
   gap: 10px;
@@ -365,133 +422,54 @@ body.phase-rest .app::before {
 }
 
 .buttons button {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 14px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 12px;
+  padding: 16px 14px;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.86);
-  color: #1f2a40;
+  background: var(--chrome-surface);
+  color: var(--workout-accent);
   min-width: 96px;
-  min-height: 44px;
+  min-height: 56px;
   touch-action: manipulation;
+  flex: 1 1 30%;
+}
+
+.buttons button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Duration values: before start = accent; after start = same as center counter. */
+body:not(.has-started) .field-stepper input[type="number"] {
+  color: var(--workout-accent);
+  -webkit-text-fill-color: var(--workout-accent);
+}
+
+body.has-started .field-stepper input[type="number"]:disabled {
+  color: var(--workout-text-strong);
+  -webkit-text-fill-color: var(--workout-text-strong);
 }
 
 .workout {
   --fill-color: var(--workout-accent);
-  --track-color: var(--timer-track-gray);
-  --inner-color: var(--workout-inner);
+  --track-color: var(--kettlebell-black);
+  --inner-color: var(--kettlebell-black);
   --tick: rgba(255, 255, 255, 0.96);
 }
 
-/* Rest: inverted vs workout — full ring = band color; shrinking arc = same grey wash as workout track. */
+/* Rest: full ring = accent; shrinking arc = kettlebell black. */
 body.phase-rest .timer.workout {
-  --fill-color: var(--timer-track-gray);
+  --fill-color: var(--kettlebell-black);
   --track-color: var(--workout-accent);
-  --inner-color: var(--workout-inner);
+  --inner-color: var(--kettlebell-black);
   --tick: rgba(255, 255, 255, 0.96);
-}
-
-.workout .center {
-  color: var(--workout-text-strong);
-}
-
-/* Same ink as the big center digits (not the main Start/Reset row). */
-body.phase-workout .meta,
-body.phase-rest .meta,
-body.phase-workout .durations > label,
-body.phase-rest .durations > label {
-  color: var(--workout-text-strong);
-}
-
-body.phase-workout .field-stepper {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-body.phase-rest .field-stepper {
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.88);
-}
-
-body.phase-workout .stepper-btn,
-body.phase-rest .stepper-btn {
-  background: var(--workout-stepper-bg);
-  color: #ffffff;
-}
-
-body.phase-workout .stepper-btn:active,
-body.phase-rest .stepper-btn:active {
-  background: var(--workout-stepper-active);
-}
-
-/* Duration values: before start = same as Start; after start = same as center counter. */
-body.phase-workout:not(.has-started) .durations > label:first-child input[type="number"],
-body.phase-workout:not(.has-started) .durations > label:nth-child(2) input[type="number"],
-body.phase-workout:not(.has-started) #workoutInput,
-body.phase-workout:not(.has-started) #restInput {
-  color: var(--workout-accent);
-  -webkit-text-fill-color: var(--workout-accent);
-}
-
-body.phase-rest:not(.has-started) .durations > label:first-child input[type="number"],
-body.phase-rest:not(.has-started) .durations > label:nth-child(2) input[type="number"],
-body.phase-rest:not(.has-started) #workoutInput,
-body.phase-rest:not(.has-started) #restInput {
-  color: var(--workout-accent);
-  -webkit-text-fill-color: var(--workout-accent);
-}
-
-body.phase-workout.has-started .durations > label:first-child input[type="number"]:disabled,
-body.phase-workout.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
-body.phase-workout.has-started #workoutInput:disabled,
-body.phase-workout.has-started #restInput:disabled {
-  color: var(--workout-text-strong);
-  -webkit-text-fill-color: var(--workout-text-strong);
-}
-
-body.phase-rest.has-started .durations > label:first-child input[type="number"]:disabled,
-body.phase-rest.has-started .durations > label:nth-child(2) input[type="number"]:disabled,
-body.phase-rest.has-started #workoutInput:disabled,
-body.phase-rest.has-started #restInput:disabled {
-  color: var(--workout-text-strong);
-  -webkit-text-fill-color: var(--workout-text-strong);
-}
-
-body.has-started .field-stepper input[type="number"]:disabled {
-  opacity: 1;
-}
-
-body.phase-workout .buttons button {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: var(--workout-accent);
-}
-
-body.phase-workout .buttons button:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-body.phase-rest .buttons button {
-  background: #ffffff;
-  color: var(--workout-accent);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-body.phase-rest .buttons button:hover {
-  background: #fafafa;
 }
 
 @media (max-width: 480px) {
-  .app {
-    gap: 14px;
-    padding: 14px 14px 18px;
-  }
-
   .timer {
-    width: min(94%, 320px);
+    width: min(320px, 86vw);
   }
 
   .center {
@@ -506,9 +484,5 @@ body.phase-rest .buttons button:hover {
 
   .durations {
     gap: 8px;
-  }
-
-  .buttons button {
-    flex: 1 1 30%;
   }
 }

@@ -73,8 +73,6 @@ function blendHex(bg, fg, t) {
 const KETTLEBELL_PAGE_HEX = "#181818";
 
 function syncBrowserChrome() {
-  document.documentElement.style.setProperty("--browser-ui-kettlebell", KETTLEBELL_PAGE_HEX);
-
   function upsertThemeColor(mediaAttr) {
     const metas = [...document.head.querySelectorAll('meta[name="theme-color"]')];
     const match = (m) =>
@@ -113,8 +111,7 @@ function applyWorkoutThemeFromHex(hex, knownIndex = null) {
   const root = document.documentElement;
   root.style.setProperty("--workout-accent", canonical);
   root.style.setProperty("--workout-accent-rgb", `${r} ${g} ${b}`);
-  root.style.setProperty("--workout-body-text", blendHex("#0f172a", canonical, 0.1));
-  root.style.setProperty("--workout-text-strong", blendHex("#0f172a", canonical, 0.45));
+  root.style.setProperty("--workout-text-strong", blendHex("#ffffff", canonical, 0.18));
   root.style.setProperty("--workout-stepper-bg", `rgba(${r},${g},${b},0.2)`);
   root.style.setProperty("--workout-stepper-active", `rgba(${r},${g},${b},0.34)`);
   syncBrowserChrome();

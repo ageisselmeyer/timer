@@ -16,19 +16,26 @@
     }
     body {
       margin: 0;
-      position: absolute;
+      position: fixed;
       inset: 0;
       width: 100%;
       background-color: #181818;
-      display: grid;
-      place-items: center;
       overflow: hidden;
     }
-    #app {
+    .app {
       visibility: hidden;
       opacity: 0;
     }
   </style>
+  <script>
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      window.navigator.standalone
+    ) {
+      document.documentElement.classList.add("standalone");
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#181818" />
@@ -45,27 +52,34 @@
   <link rel="stylesheet" href="theme.css" />
 </head>
 <body class="phase-workout">
-  <main id="app" class="app">
-    <section id="timer" class="timer workout">
-      <div class="ring" id="ring">
-        <svg class="ring-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <circle class="ring-track" cx="50" cy="50" r="44" />
-          <circle
-            class="ring-prog"
-            id="ringProgress"
-            cx="50"
-            cy="50"
-            r="44"
-            transform="rotate(-90 50 50)"
-          />
-        </svg>
-      </div>
-      <div class="ticks"></div>
-      <div class="center" id="seconds">30</div>
-    </section>
-    <div class="meta" id="phaseLabel">Workout</div>
+  <div id="app" class="app">
+    <header class="app-header">
+      <div class="meta" id="phaseLabel">Workout</div>
+    </header>
 
-    <section class="controls">
+    <main class="app-scroll">
+      <div class="timer-area">
+        <section id="timer" class="timer workout">
+          <div class="ring" id="ring">
+            <svg class="ring-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <circle class="ring-track" cx="50" cy="50" r="44" />
+              <circle
+                class="ring-prog"
+                id="ringProgress"
+                cx="50"
+                cy="50"
+                r="44"
+                transform="rotate(-90 50 50)"
+              />
+            </svg>
+          </div>
+          <div class="ticks"></div>
+          <div class="center" id="seconds">30</div>
+        </section>
+      </div>
+    </main>
+
+    <nav class="bottom-bar" aria-label="Timer controls">
       <div class="durations">
         <label>
           Workout (sec)
@@ -88,8 +102,8 @@
         <button id="startBtn" type="button">Start</button>
         <button id="resetBtn" type="button">Reset</button>
       </div>
-    </section>
-  </main>
+    </nav>
+  </div>
 
   <script src="app.js"></script>
 </body>
