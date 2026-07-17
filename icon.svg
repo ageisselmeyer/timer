@@ -13,10 +13,10 @@
     y="256"
     fill="#ffffff"
     font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="100"
+    font-size="78"
     font-weight="700"
-    letter-spacing="-0.04em"
+    letter-spacing="-0.06em"
     text-anchor="middle"
     dominant-baseline="central"
-  >W<tspan dx="-10">T</tspan></text>
+  >WT</text>
 </svg>
