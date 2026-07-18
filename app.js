@@ -6,6 +6,7 @@ ringProgressEl.setAttribute("stroke-dasharray", `${RING_LEN} ${RING_LEN}`);
 ringProgressEl.style.strokeDashoffset = String(RING_LEN);
 const secondsEl = document.getElementById("seconds");
 const phaseLabelEl = document.getElementById("phaseLabel");
+const ticksContrastEl = document.getElementById("ticksContrast");
 const workoutInput = document.getElementById("workoutInput");
 const restInput = document.getElementById("restInput");
 const startBtn = document.getElementById("startBtn");
@@ -41,6 +42,7 @@ const METAL_START_BG = {
     "linear-gradient(135deg, #8a5a0e 0%, #ffe08a 18%, #d4a017 36%, #fff0b0 50%, #a06e10 68%, #ffcc3d 84%, #e0b01a 100%)",
 };
 let workoutPaletteIndex = null;
+let currentAccentHex = WORKOUT_BAND_PALETTE[0];
 
 function normalizeHex(hex) {
   return String(hex || "")
@@ -103,6 +105,7 @@ function applyWorkoutThemeFromHex(hex, knownIndex = null) {
   const { r, g, b } = hexToRgb(canonical);
   const idx = Number.isInteger(knownIndex) ? knownIndex : WORKOUT_BAND_PALETTE.indexOf(canonical);
   workoutPaletteIndex = idx >= 0 ? idx : workoutPaletteIndex;
+  currentAccentHex = canonical;
   const startInk = relativeLuminance(canonical) > 0.62 ? "#181818" : "#ffffff";
   const metalStroke = METAL_RING_STROKE[canonical];
   const metalStartBg = METAL_START_BG[canonical];
@@ -303,6 +306,30 @@ function syncPhaseChrome() {
   }
 }
 
+function accentNeedsDarkTicks() {
+  return relativeLuminance(currentAccentHex) >= 0.9;
+}
+
+function syncTickContrast(doneRatio) {
+  const invert = accentNeedsDarkTicks();
+  document.body.classList.toggle("tick-contrast-active", invert);
+  if (!ticksContrastEl) return;
+  ticksContrastEl.classList.toggle("is-rest", phase === PHASE_REST);
+  if (!invert) {
+    ticksContrastEl.style.setProperty("--tick-contrast-end", "0deg");
+    ticksContrastEl.style.setProperty("--tick-contrast-start", "0deg");
+    return;
+  }
+  const deg = `${(doneRatio * 360).toFixed(2)}deg`;
+  if (phase === PHASE_REST) {
+    // Dark ticks on the remaining white arc (from doneRatio to 360°).
+    ticksContrastEl.style.setProperty("--tick-contrast-start", deg);
+  } else {
+    // Dark ticks on the elapsed white arc (from 0 to doneRatio).
+    ticksContrastEl.style.setProperty("--tick-contrast-end", deg);
+  }
+}
+
 function syncRingFromRemaining() {
   const doneRatio = Math.max(0, Math.min(1, 1 - remaining / phaseDuration));
   let dasharray;
@@ -318,6 +345,7 @@ function syncRingFromRemaining() {
     offset = RING_LEN * (1 - doneRatio);
   }
   const key = `${phase}:${dasharray}:${offset.toFixed(2)}`;
+  syncTickContrast(doneRatio);
   if (key === lastRingDashKey) return;
   lastRingDashKey = key;
   ringProgressEl.style.strokeDasharray = dasharray;
@@ -562,7 +590,7 @@ workoutPlus.addEventListener("click", () => stepDuration(workoutInput, 5));
 restMinus.addEventListener("click", () => stepDuration(restInput, -5));
 restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
-const initialIdx = 0;
+const initialIdx = 7; // white (testing)
 applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
 updateUI();
 updateStartButton();

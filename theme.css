@@ -280,18 +280,59 @@ html.standalone .app {
   border-radius: 50%;
   z-index: 3;
   background: repeating-conic-gradient(
-    var(--tick) 0deg 1.2deg,
+    #ffffff 0deg 1.2deg,
     transparent 1.2deg 30deg
   );
-  -webkit-mask: radial-gradient(circle, transparent 57%, black 58%, black 68%, transparent 69%);
-  mask: radial-gradient(circle, transparent 57%, black 58%, black 68%, transparent 69%);
+  -webkit-mask: radial-gradient(circle, transparent 56.5%, black 57.5%, black 67.5%, transparent 68.5%);
+  mask: radial-gradient(circle, transparent 56.5%, black 57.5%, black 67.5%, transparent 68.5%);
   opacity: 0.95;
   pointer-events: none;
 }
 
+/* Same geometry as .ticks; only the covered white-ring sector is painted dark. */
+.ticks-contrast {
+  z-index: 4;
+  background: repeating-conic-gradient(
+    #181818 0deg 1.2deg,
+    transparent 1.2deg 30deg
+  );
+  opacity: 0;
+  -webkit-mask-image:
+    radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
+    conic-gradient(#000 0deg, #000 var(--tick-contrast-end, 0deg), transparent 0);
+  mask-image:
+    radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
+    conic-gradient(#000 0deg, #000 var(--tick-contrast-end, 0deg), transparent 0);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+.ticks-contrast.is-rest {
+  -webkit-mask-image:
+    radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
+    conic-gradient(
+      transparent 0deg,
+      transparent var(--tick-contrast-start, 0deg),
+      #000 0,
+      #000 360deg
+    );
+  mask-image:
+    radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
+    conic-gradient(
+      transparent 0deg,
+      transparent var(--tick-contrast-start, 0deg),
+      #000 0,
+      #000 360deg
+    );
+}
+
+body.tick-contrast-active .ticks-contrast {
+  opacity: 0.95;
+}
+
 .center {
   position: relative;
-  z-index: 4;
+  z-index: 5;
   width: 72%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
@@ -479,8 +520,8 @@ body.is-running #startBtn:active {
 
 /* Duration values: before start = accent; after start = same as center counter. */
 body:not(.has-started) .field-stepper input[type="number"] {
-  color: var(--workout-accent);
-  -webkit-text-fill-color: var(--workout-accent);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
 }
 
 body.has-started .field-stepper input[type="number"]:disabled {
@@ -492,7 +533,6 @@ body.has-started .field-stepper input[type="number"]:disabled {
   --fill-color: var(--workout-accent);
   --track-color: var(--kettlebell-black);
   --inner-color: var(--kettlebell-black);
-  --tick: rgba(255, 255, 255, 0.96);
 }
 
 @media (max-width: 480px) {
