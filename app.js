@@ -480,12 +480,62 @@ const VIEWPORT_STABLE_FRAMES = 4;
 const VIEWPORT_STABLE_MAX_MS = 600;
 /** Extra wait after height stops changing before we lock (iOS second layout pass). */
 const VIEWPORT_POST_STABLE_MS = 120;
+/** Used only when env(safe-area-inset-bottom) under-reports as 0 in standalone. */
+const BOTTOM_SAFE_FLOOR_PX = 34;
 
 function readViewportHeight() {
   return window.visualViewport?.height ?? window.innerHeight;
 }
 
+function isStandaloneDisplay() {
+  return (
+    document.documentElement.classList.contains("standalone") ||
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    !!window.navigator.standalone
+  );
+}
+
+function readEnvSafeAreaBottomPx() {
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:absolute;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px)";
+  document.body.appendChild(probe);
+  const px = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+  probe.remove();
+  return px;
+}
+
+/**
+ * Per-device PWA bottom inset + shell height.
+ * Avoids a blanket max(34px, env()) which over/under-pads across iPhone models
+ * (15 Pro Max vs 16 Pro). Does not lock html background height.
+ */
+function syncStandaloneChrome() {
+  const root = document.documentElement;
+  if (!isStandaloneDisplay()) {
+    root.style.removeProperty("--bottom-safe");
+    root.style.removeProperty("--app-shell-height");
+    return;
+  }
+
+  const shellH = Math.round(window.visualViewport?.height ?? window.innerHeight);
+  if (shellH > 0) {
+    root.style.setProperty("--app-shell-height", `${shellH}px`);
+  }
+
+  const envBottom = readEnvSafeAreaBottomPx();
+  const bottomSafe = envBottom > 0 ? envBottom : BOTTOM_SAFE_FLOOR_PX;
+  root.style.setProperty("--bottom-safe", `${Math.round(bottomSafe)}px`);
+}
+
 function applyLockedViewportHeight(px) {
+  if (isStandaloneDisplay()) {
+    document.documentElement.style.removeProperty("height");
+    document.body.style.height = "";
+    syncStandaloneChrome();
+    return;
+  }
   document.documentElement.style.height = `${px}px`;
   document.body.style.height = "";
 }
@@ -527,12 +577,14 @@ async function waitForStableViewportHeight() {
 async function stabilizeViewport() {
   if (viewportLocked) {
     if (lockedViewportHeightPx !== null) applyLockedViewportHeight(lockedViewportHeightPx);
+    else syncStandaloneChrome();
     return;
   }
 
   appEl?.classList.remove("ready");
 
   lockViewportHeight(await waitForStableViewportHeight());
+  syncStandaloneChrome();
 
   appEl?.offsetHeight;
   appEl?.classList.add("ready");
@@ -544,6 +596,8 @@ window.addEventListener("pageshow", () => {
     void stabilizeViewport();
   } else if (lockedViewportHeightPx !== null) {
     applyLockedViewportHeight(lockedViewportHeightPx);
+  } else {
+    syncStandaloneChrome();
   }
 
   if (hasStarted) {
@@ -556,6 +610,18 @@ window.addEventListener("pageshow", () => {
     scheduleNextTick();
   }
 });
+
+window.addEventListener("resize", () => {
+  if (!viewportLocked) return;
+  syncStandaloneChrome();
+});
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    if (!viewportLocked) return;
+    syncStandaloneChrome();
+  });
+}
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
