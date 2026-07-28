@@ -6,6 +6,7 @@ ringProgressEl.setAttribute("stroke-dasharray", `${RING_LEN} ${RING_LEN}`);
 ringProgressEl.style.strokeDashoffset = String(RING_LEN);
 const secondsEl = document.getElementById("seconds");
 const phaseLabelEl = document.getElementById("phaseLabel");
+const ticksEl = timerEl.querySelector(".ticks:not(.ticks-contrast)");
 const ticksContrastEl = document.getElementById("ticksContrast");
 const workoutInput = document.getElementById("workoutInput");
 const restInput = document.getElementById("restInput");
@@ -154,10 +155,13 @@ const beepBufferCache = new Map();
 let beepedSecond = null;
 let wakeLock = null;
 let hasStarted = false;
+let countdownActive = false;
+const COUNTDOWN_SEC = 3;
 
 function updateStartButton() {
   document.body.classList.toggle("has-started", hasStarted);
   document.body.classList.toggle("is-running", running);
+  document.body.classList.toggle("countdown", countdownActive);
   if (!hasStarted) {
     startBtn.textContent = "Start";
   } else if (running) {
@@ -300,7 +304,12 @@ function syncPhaseChrome() {
   timerEl.classList.add("workout");
   document.body.classList.toggle("phase-workout", phase === PHASE_WORKOUT);
   document.body.classList.toggle("phase-rest", phase === PHASE_REST);
-  const label = phase === PHASE_WORKOUT ? "Workout" : "Rest";
+  document.body.classList.toggle("countdown", countdownActive);
+  const label = countdownActive
+    ? "Get Ready!"
+    : phase === PHASE_WORKOUT
+      ? "Workout"
+      : "Rest";
   if (phaseLabelEl.textContent !== label) {
     phaseLabelEl.textContent = label;
   }
@@ -311,17 +320,28 @@ function accentNeedsDarkTicks() {
 }
 
 function syncTickContrast(doneRatio) {
-  const invert = accentNeedsDarkTicks();
+  const invert = !countdownActive && accentNeedsDarkTicks();
   document.body.classList.toggle("tick-contrast-active", invert);
+  if (ticksEl) {
+    if (countdownActive) {
+      ticksEl.style.setProperty(
+        "--tick-countdown-end",
+        `${(doneRatio * 360).toFixed(2)}deg`,
+      );
+    } else {
+      ticksEl.style.removeProperty("--tick-countdown-end");
+    }
+  }
   if (!ticksContrastEl) return;
-  ticksContrastEl.classList.toggle("is-rest", phase === PHASE_REST);
+  const useRemainingArc = phase === PHASE_REST;
+  ticksContrastEl.classList.toggle("is-rest", useRemainingArc);
   if (!invert) {
     ticksContrastEl.style.setProperty("--tick-contrast-end", "0deg");
     ticksContrastEl.style.setProperty("--tick-contrast-start", "0deg");
     return;
   }
   const deg = `${(doneRatio * 360).toFixed(2)}deg`;
-  if (phase === PHASE_REST) {
+  if (useRemainingArc) {
     // Dark ticks on the remaining white arc (from doneRatio to 360°).
     ticksContrastEl.style.setProperty("--tick-contrast-start", deg);
   } else {
@@ -334,7 +354,7 @@ function syncRingFromRemaining() {
   const doneRatio = Math.max(0, Math.min(1, 1 - remaining / phaseDuration));
   let dasharray;
   let offset;
-  if (phase === PHASE_REST) {
+  if (countdownActive || phase === PHASE_REST) {
     // Remaining accent arc; leading edge advances clockwise from 12 (same direction as workout).
     const remLen = RING_LEN * (1 - doneRatio);
     dasharray = `${remLen} ${RING_LEN}`;
@@ -344,7 +364,7 @@ function syncRingFromRemaining() {
     dasharray = `${RING_LEN} ${RING_LEN}`;
     offset = RING_LEN * (1 - doneRatio);
   }
-  const key = `${phase}:${dasharray}:${offset.toFixed(2)}`;
+  const key = `${countdownActive ? "cd" : phase}:${dasharray}:${offset.toFixed(2)}`;
   syncTickContrast(doneRatio);
   if (key === lastRingDashKey) return;
   lastRingDashKey = key;
@@ -352,9 +372,16 @@ function syncRingFromRemaining() {
   ringProgressEl.style.strokeDashoffset = String(offset);
 }
 
+function getDisplayedSeconds() {
+  if (countdownActive) {
+    return getInputValue(workoutInput, 30);
+  }
+  return Math.max(0, Math.ceil(remaining));
+}
+
 function updateUI() {
   syncPhaseChrome();
-  const shown = Math.max(0, Math.ceil(remaining));
+  const shown = getDisplayedSeconds();
   secondsEl.textContent = String(shown);
   lastRenderedCeilSec = shown;
   lastRingDashKey = null;
@@ -373,6 +400,18 @@ function clearScheduler() {
 }
 
 function finishPhase() {
+  if (countdownActive) {
+    countdownActive = false;
+    document.body.classList.remove("countdown");
+    beep(0.7, 990, 0.16, false);
+    setPhase(PHASE_WORKOUT);
+    if (running) {
+      endTimeMs = performance.now() + remaining * 1000;
+      clearScheduler();
+      scheduleNextTick();
+    }
+    return;
+  }
   beep(0.7, 990, 0.16, false);
   switchPhase();
   if (running) {
@@ -384,24 +423,28 @@ function tick() {
   if (!running) return;
   const now = performance.now();
   remaining = Math.max(0, (endTimeMs - now) / 1000);
-  const shown = Math.max(0, Math.ceil(remaining));
 
-  if (shown !== beepedSecond) {
-    if (shown >= 1 && shown <= 3) {
+  if (remaining <= 0) {
+    finishPhase();
+    return;
+  }
+
+  const shown = getDisplayedSeconds();
+  const beepSec = countdownActive
+    ? Math.max(0, Math.ceil(remaining))
+    : shown;
+
+  if (beepSec !== beepedSecond) {
+    if (beepSec >= 1 && beepSec <= 3) {
       beep(0.25, 990, 0.16, true);
     }
-    beepedSecond = shown;
+    beepedSecond = beepSec;
   }
 
   syncRingFromRemaining();
   if (shown !== lastRenderedCeilSec) {
     secondsEl.textContent = String(shown);
     lastRenderedCeilSec = shown;
-  }
-
-  if (remaining <= 0) {
-    finishPhase();
-    return;
   }
 
   if (!running) return;
@@ -412,8 +455,8 @@ function scheduleNextTick() {
   if (!running) return;
   if (document.hidden) {
     const msLeft = endTimeMs - performance.now();
-    const delay = msLeft <= 0 ? 0 : Math.min(HIDDEN_TICK_MS, Math.max(8, msLeft));
-    timerTickId = setTimeout(tick, delay);
+    const delayMs = msLeft <= 0 ? 0 : Math.min(HIDDEN_TICK_MS, Math.max(8, msLeft));
+    timerTickId = setTimeout(tick, delayMs);
     return;
   }
   rafId = requestAnimationFrame(() => {
@@ -422,14 +465,38 @@ function scheduleNextTick() {
   });
 }
 
+function beginCountdown() {
+  countdownActive = true;
+  phaseDuration = COUNTDOWN_SEC;
+  remaining = COUNTDOWN_SEC;
+  beepedSecond = null;
+  lastRingDashKey = null;
+  lastRenderedCeilSec = null;
+  updateUI();
+}
+
 function startTimer() {
   if (running) return;
-  hasStarted = true;
-  running = true;
   const ctx = ensureAudioContext();
   void acquireWakeLock();
+
+  if (!hasStarted) {
+    hasStarted = true;
+    beginCountdown();
+    running = true;
+    updateStartButton();
+    updateDurationControlsLock();
+    void ctx.resume().then(() => {
+      if (!running) return;
+      endTimeMs = performance.now() + remaining * 1000;
+      clearScheduler();
+      scheduleNextTick();
+    });
+    return;
+  }
+
+  running = true;
   updateStartButton();
-  updateDurationControlsLock();
   void ctx.resume().then(() => {
     if (!running) return;
     endTimeMs = performance.now() + remaining * 1000;
@@ -445,7 +512,7 @@ function pauseTimer() {
   clearScheduler();
   lastRingDashKey = null;
   syncRingFromRemaining();
-  const shown = Math.max(0, Math.ceil(remaining));
+  const shown = getDisplayedSeconds();
   secondsEl.textContent = String(shown);
   lastRenderedCeilSec = shown;
   if (audioCtx && audioCtx.state === "running") {
@@ -457,6 +524,8 @@ function pauseTimer() {
 function resetTimer() {
   pauseTimer();
   hasStarted = false;
+  countdownActive = false;
+  document.body.classList.remove("countdown");
   void releaseWakeLock();
   applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[0], 0);
   setPhase(PHASE_WORKOUT);
