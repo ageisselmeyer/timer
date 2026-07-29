@@ -553,10 +553,20 @@ body.countdown .ring {
 body.countdown .ticks:not(.ticks-contrast) {
   -webkit-mask-image:
     radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
-    conic-gradient(#000 0deg, #000 var(--tick-countdown-end, 0deg), transparent 0);
+    conic-gradient(
+      #000 0deg,
+      #000 var(--tick-countdown-solid, 0deg),
+      rgba(0, 0, 0, 0.45) var(--tick-countdown-mid, 0deg),
+      transparent var(--tick-countdown-end, 0deg)
+    );
   mask-image:
     radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
-    conic-gradient(#000 0deg, #000 var(--tick-countdown-end, 0deg), transparent 0);
+    conic-gradient(
+      #000 0deg,
+      #000 var(--tick-countdown-solid, 0deg),
+      rgba(0, 0, 0, 0.45) var(--tick-countdown-mid, 0deg),
+      transparent var(--tick-countdown-end, 0deg)
+    );
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }

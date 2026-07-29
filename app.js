@@ -324,12 +324,18 @@ function syncTickContrast(doneRatio) {
   document.body.classList.toggle("tick-contrast-active", invert);
   if (ticksEl) {
     if (countdownActive) {
-      ticksEl.style.setProperty(
-        "--tick-countdown-end",
-        `${(doneRatio * 360).toFixed(2)}deg`,
-      );
+      const endDeg = doneRatio * 360;
+      // Soft leading edge ~two ticks so marks ease in gradually.
+      const fadeDeg = 55;
+      const solidDeg = Math.max(0, endDeg - fadeDeg);
+      const midDeg = Math.max(0, endDeg - fadeDeg * 0.45);
+      ticksEl.style.setProperty("--tick-countdown-end", `${endDeg.toFixed(2)}deg`);
+      ticksEl.style.setProperty("--tick-countdown-mid", `${midDeg.toFixed(2)}deg`);
+      ticksEl.style.setProperty("--tick-countdown-solid", `${solidDeg.toFixed(2)}deg`);
     } else {
       ticksEl.style.removeProperty("--tick-countdown-end");
+      ticksEl.style.removeProperty("--tick-countdown-mid");
+      ticksEl.style.removeProperty("--tick-countdown-solid");
     }
   }
   if (!ticksContrastEl) return;
