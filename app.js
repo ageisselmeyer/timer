@@ -6,8 +6,8 @@ ringProgressEl.setAttribute("stroke-dasharray", `${RING_LEN} ${RING_LEN}`);
 ringProgressEl.style.strokeDashoffset = String(RING_LEN);
 const secondsEl = document.getElementById("seconds");
 const phaseLabelEl = document.getElementById("phaseLabel");
-const ticksEl = timerEl.querySelector(".ticks:not(.ticks-contrast)");
 const ticksContrastEl = document.getElementById("ticksContrast");
+const countdownTicksEl = document.getElementById("countdownTicks");
 const workoutInput = document.getElementById("workoutInput");
 const restInput = document.getElementById("restInput");
 const startBtn = document.getElementById("startBtn");
@@ -156,7 +156,40 @@ let beepedSecond = null;
 let wakeLock = null;
 let hasStarted = false;
 let countdownActive = false;
+let countdownTickGroups = 0;
+const countdownTickEls = [];
+const TICK_COUNT = 12;
 const COUNTDOWN_SEC = 3;
+const COUNTDOWN_TICK_GROUPS = [
+  [0, 3, 6, 9],
+  [1, 4, 7, 10],
+  [2, 5, 8, 11],
+];
+
+function initCountdownTicks() {
+  if (!countdownTicksEl || countdownTickEls.length) return;
+  for (let i = 0; i < TICK_COUNT; i++) {
+    const el = document.createElement("div");
+    el.className = "countdown-tick";
+    const startDeg = i * 30;
+    el.style.setProperty("--tick-start", `${startDeg}deg`);
+    el.style.setProperty("--tick-end", `${startDeg + 1.2}deg`);
+    countdownTicksEl.appendChild(el);
+    countdownTickEls.push(el);
+  }
+}
+
+function resetCountdownTicks() {
+  countdownTickEls.forEach((el) => el.classList.remove("is-visible"));
+}
+
+function revealCountdownTickBatch(batchIndex) {
+  const batch = COUNTDOWN_TICK_GROUPS[batchIndex];
+  if (!batch) return;
+  batch.forEach((tickIndex) => {
+    countdownTickEls[tickIndex]?.classList.add("is-visible");
+  });
+}
 
 function updateStartButton() {
   document.body.classList.toggle("has-started", hasStarted);
@@ -307,9 +340,11 @@ function syncPhaseChrome() {
   document.body.classList.toggle("countdown", countdownActive);
   const label = countdownActive
     ? "Get Ready!"
-    : phase === PHASE_WORKOUT
-      ? "Workout"
-      : "Rest";
+    : !hasStarted
+      ? "Workout Timer"
+      : phase === PHASE_WORKOUT
+        ? "Workout"
+        : "Rest";
   if (phaseLabelEl.textContent !== label) {
     phaseLabelEl.textContent = label;
   }
@@ -322,22 +357,6 @@ function accentNeedsDarkTicks() {
 function syncTickContrast(doneRatio) {
   const invert = !countdownActive && accentNeedsDarkTicks();
   document.body.classList.toggle("tick-contrast-active", invert);
-  if (ticksEl) {
-    if (countdownActive) {
-      const endDeg = doneRatio * 360;
-      // Soft leading edge ~two ticks so marks ease in gradually.
-      const fadeDeg = 55;
-      const solidDeg = Math.max(0, endDeg - fadeDeg);
-      const midDeg = Math.max(0, endDeg - fadeDeg * 0.45);
-      ticksEl.style.setProperty("--tick-countdown-end", `${endDeg.toFixed(2)}deg`);
-      ticksEl.style.setProperty("--tick-countdown-mid", `${midDeg.toFixed(2)}deg`);
-      ticksEl.style.setProperty("--tick-countdown-solid", `${solidDeg.toFixed(2)}deg`);
-    } else {
-      ticksEl.style.removeProperty("--tick-countdown-end");
-      ticksEl.style.removeProperty("--tick-countdown-mid");
-      ticksEl.style.removeProperty("--tick-countdown-solid");
-    }
-  }
   if (!ticksContrastEl) return;
   const useRemainingArc = phase === PHASE_REST;
   ticksContrastEl.classList.toggle("is-rest", useRemainingArc);
@@ -408,6 +427,8 @@ function clearScheduler() {
 function finishPhase() {
   if (countdownActive) {
     countdownActive = false;
+    countdownTickGroups = 0;
+    resetCountdownTicks();
     document.body.classList.remove("countdown");
     beep(0.7, 990, 0.16, false);
     setPhase(PHASE_WORKOUT);
@@ -443,6 +464,14 @@ function tick() {
   if (beepSec !== beepedSecond) {
     if (beepSec >= 1 && beepSec <= 3) {
       beep(0.25, 990, 0.16, true);
+      if (countdownActive) {
+        const prevGroups = countdownTickGroups;
+        const newGroups = 4 - beepSec;
+        if (newGroups > prevGroups) {
+          countdownTickGroups = newGroups;
+          revealCountdownTickBatch(newGroups - 1);
+        }
+      }
     }
     beepedSecond = beepSec;
   }
@@ -473,6 +502,8 @@ function scheduleNextTick() {
 
 function beginCountdown() {
   countdownActive = true;
+  countdownTickGroups = 0;
+  resetCountdownTicks();
   phaseDuration = COUNTDOWN_SEC;
   remaining = COUNTDOWN_SEC;
   beepedSecond = null;
@@ -531,6 +562,8 @@ function resetTimer() {
   pauseTimer();
   hasStarted = false;
   countdownActive = false;
+  countdownTickGroups = 0;
+  resetCountdownTicks();
   document.body.classList.remove("countdown");
   void releaseWakeLock();
   applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[0], 0);
@@ -732,6 +765,7 @@ restMinus.addEventListener("click", () => stepDuration(restInput, -5));
 restPlus.addEventListener("click", () => stepDuration(restInput, 5));
 
 const initialIdx = 0;
+initCountdownTicks();
 applyWorkoutThemeFromHex(WORKOUT_BAND_PALETTE[initialIdx], initialIdx);
 updateUI();
 updateStartButton();

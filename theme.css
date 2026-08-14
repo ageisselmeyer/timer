@@ -551,24 +551,58 @@ body.countdown .ring {
 }
 
 body.countdown .ticks:not(.ticks-contrast) {
+  visibility: hidden;
+}
+
+.countdown-ticks {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+body.countdown .countdown-ticks {
+  opacity: 1;
+  visibility: visible;
+}
+
+.countdown-tick {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0;
+  background: repeating-conic-gradient(
+    #ffffff 0deg 1.2deg,
+    transparent 1.2deg 30deg
+  );
   -webkit-mask-image:
     radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
     conic-gradient(
-      #000 0deg,
-      #000 var(--tick-countdown-solid, 0deg),
-      rgba(0, 0, 0, 0.45) var(--tick-countdown-mid, 0deg),
-      transparent var(--tick-countdown-end, 0deg)
+      transparent 0deg,
+      transparent var(--tick-start, 0deg),
+      #000 var(--tick-start, 0deg),
+      #000 var(--tick-end, 1.2deg),
+      transparent var(--tick-end, 1.2deg)
     );
   mask-image:
     radial-gradient(circle, transparent 56.5%, #000 57.5%, #000 67.5%, transparent 68.5%),
     conic-gradient(
-      #000 0deg,
-      #000 var(--tick-countdown-solid, 0deg),
-      rgba(0, 0, 0, 0.45) var(--tick-countdown-mid, 0deg),
-      transparent var(--tick-countdown-end, 0deg)
+      transparent 0deg,
+      transparent var(--tick-start, 0deg),
+      #000 var(--tick-start, 0deg),
+      #000 var(--tick-end, 1.2deg),
+      transparent var(--tick-end, 1.2deg)
     );
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
+  pointer-events: none;
+}
+
+.countdown-tick.is-visible {
+  opacity: 0.95;
 }
 
 @media (max-width: 480px) {
