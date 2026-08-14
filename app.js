@@ -341,7 +341,7 @@ function syncPhaseChrome() {
   const label = countdownActive
     ? "Get Ready!"
     : !hasStarted
-      ? "Workout Timer"
+      ? "StrongFit Timer"
       : phase === PHASE_WORKOUT
         ? "Workout"
         : "Rest";
