@@ -35,10 +35,10 @@
     y="256"
     fill="#ffffff"
     font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="78"
+    font-size="68"
     font-weight="700"
-    letter-spacing="-0.06em"
+    letter-spacing="-0.04em"
     text-anchor="middle"
     dominant-baseline="central"
-  >WT</text>
+  >SFT</text>
 </svg>
