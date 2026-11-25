@@ -27,7 +27,7 @@ const WORKOUT_BAND_PALETTE = [
   "#2c9323", // green
   "#fd6f37", // orange
   "#ff0024", // red
-  "#9e9e9e", // grey
+  "#7a7a7a", // grey (36 kg)
   "#ffffff", // white
   "#c5d0dc", // silver
   "#d4a017", // gold
